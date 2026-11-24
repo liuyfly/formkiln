@@ -98,6 +98,48 @@
         "matches": ["٣", "\\d"]
       },
       "expected": false
+    },
+    {
+      "name": "dot does not match a newline",
+      "expression": {
+        "matches": ["a\nc", "a.c"]
+      },
+      "expected": false
+    },
+    {
+      "name": "dot matches any other code point",
+      "expression": {
+        "matches": ["ac", "a.c"]
+      },
+      "expected": true
+    },
+    {
+      "name": "\\s does not match a no-break space",
+      "expression": {
+        "matches": [" ", "\\s"]
+      },
+      "expected": false
+    },
+    {
+      "name": "$ does not match before a trailing newline",
+      "expression": {
+        "matches": ["ab\n", "ab$"]
+      },
+      "expected": false
+    },
+    {
+      "name": "literal hyphen in a class",
+      "expression": {
+        "matches": ["-", "[a\\-z]"]
+      },
+      "expected": true
+    },
+    {
+      "name": "invalid pattern gives null",
+      "expression": {
+        "matches": ["a", "(?=a)"]
+      },
+      "expected": null
     }
   ]
 }
