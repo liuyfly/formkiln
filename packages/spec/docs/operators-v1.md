@@ -49,7 +49,7 @@ A path is a dot-separated list of segments. Numeric segments index arrays: `prev
 | `$this`      | the second argument of array operators | The current array element.            |
 | `$thisIndex` | the second argument of array operators | Index of the current array element.   |
 
-The empty path `""` is not allowed.
+The path MUST be a string literal (not a computed expression) so that references can be checked statically. The empty path `""` is not allowed.
 
 ## 3. Logic
 
@@ -158,7 +158,22 @@ Example — total monthly rent across all items of a repeater:
 { "sum": [{ "map": [{ "var": "properties" }, { "var": "$this.monthlyRent" }] }] }
 ```
 
-## 10. Operators intentionally not supported
+## 10. Arity
+
+A form document is invalid if an operation has a number of arguments outside this table (Form Schema §10, code `arity`).
+
+| Arguments | Operators                                                                                |
+| --------- | ---------------------------------------------------------------------------------------- |
+| 0         | `date.today`                                                                             |
+| 0 or more | `cat`                                                                                    |
+| 1         | `!`, `empty`, `length`, `lower`, `upper`, `sum`                                          |
+| 1 or 2    | `var`, `-`, `round`                                                                      |
+| 1 or more | `and`, `or`, `if`, `+`, `*`, `min`, `max`                                                |
+| 2         | `==`, `!=`, `>`, `>=`, `/`, `%`, `matches`, `in`, `some`, `all`, `none`, `map`, `filter` |
+| 2 or 3    | `<`, `<=`                                                                                |
+| 3         | `date.add`, `date.diff`                                                                  |
+
+## 11. Operators intentionally not supported
 
 | JSON Logic operator                | Reason / replacement                             |
 | ---------------------------------- | ------------------------------------------------ |

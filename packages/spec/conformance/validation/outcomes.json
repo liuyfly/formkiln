@@ -1,0 +1,95 @@
+{
+  "description": "Outcome selection (§8).",
+  "forms": {
+    "out": {
+      "schemaVersion": 1,
+      "key": "out",
+      "title": "out",
+      "pages": [
+        {
+          "key": "page1",
+          "elements": [
+            {
+              "type": "radio",
+              "key": "x",
+              "label": "X",
+              "options": [
+                {
+                  "value": "1",
+                  "label": "1"
+                },
+                {
+                  "value": "2",
+                  "label": "2"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "key": "y",
+              "label": "Y",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "submit": {
+        "outcomes": [
+          {
+            "key": "first",
+            "when": {
+              "==": [
+                {
+                  "var": "x"
+                },
+                "1"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "cases": [
+    {
+      "name": "the first matching outcome is selected",
+      "form": "out",
+      "answers": {
+        "x": "1",
+        "y": "v"
+      },
+      "expected": {
+        "errors": [],
+        "outcome": "first"
+      }
+    },
+    {
+      "name": "no matching outcome gives null",
+      "form": "out",
+      "answers": {
+        "x": "2",
+        "y": "v"
+      },
+      "expected": {
+        "errors": [],
+        "outcome": null
+      }
+    },
+    {
+      "name": "no outcome when validation fails",
+      "form": "out",
+      "answers": {
+        "x": "1"
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "y",
+            "code": "required"
+          }
+        ],
+        "outcome": null
+      }
+    }
+  ]
+}

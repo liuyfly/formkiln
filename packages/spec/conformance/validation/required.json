@@ -1,0 +1,245 @@
+{
+  "description": "The required rule, composite parts and custom messages (§6.3, §7.2, §11.2).",
+  "forms": {
+    "req": {
+      "schemaVersion": 1,
+      "key": "req",
+      "title": "req",
+      "settings": {
+        "defaultLocale": "en",
+        "locales": ["en", "fr"]
+      },
+      "pages": [
+        {
+          "key": "page1",
+          "elements": [
+            {
+              "type": "text",
+              "key": "a",
+              "label": "A",
+              "required": true
+            },
+            {
+              "type": "text",
+              "key": "b",
+              "label": "B",
+              "required": {
+                "==": [
+                  {
+                    "var": "a"
+                  },
+                  "x"
+                ]
+              },
+              "requiredMessage": {
+                "en": "B is needed",
+                "fr": "B est requis"
+              }
+            },
+            {
+              "type": "boolean",
+              "key": "consent",
+              "label": "Consent",
+              "required": true,
+              "validators": [
+                {
+                  "type": "equals",
+                  "value": true,
+                  "message": "Please confirm"
+                }
+              ]
+            },
+            {
+              "type": "name",
+              "key": "nm",
+              "label": "Name",
+              "required": true
+            },
+            {
+              "type": "address",
+              "key": "ad",
+              "label": "Address"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "name": "missing required values",
+      "form": "req",
+      "answers": {},
+      "expected": {
+        "errors": [
+          {
+            "path": "a",
+            "code": "required"
+          },
+          {
+            "path": "consent",
+            "code": "required"
+          },
+          {
+            "path": "nm",
+            "code": "required"
+          }
+        ]
+      }
+    },
+    {
+      "name": "conditional requirement with a localised message",
+      "form": "req",
+      "answers": {
+        "a": "x",
+        "consent": true,
+        "nm": {
+          "given": "Ada",
+          "family": "Lovelace"
+        }
+      },
+      "locale": "fr",
+      "expected": {
+        "errors": [
+          {
+            "path": "b",
+            "code": "required",
+            "message": "B est requis"
+          }
+        ]
+      }
+    },
+    {
+      "name": "custom message in the default locale",
+      "form": "req",
+      "answers": {
+        "a": "x",
+        "consent": true,
+        "nm": {
+          "given": "Ada",
+          "family": "Lovelace"
+        }
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "b",
+            "code": "required",
+            "message": "B is needed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unknown locale falls back to the default locale",
+      "form": "req",
+      "answers": {
+        "a": "x",
+        "consent": true,
+        "nm": {
+          "given": "Ada",
+          "family": "Lovelace"
+        }
+      },
+      "locale": "de",
+      "expected": {
+        "errors": [
+          {
+            "path": "b",
+            "code": "required",
+            "message": "B is needed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "false is a value; equals demands true",
+      "form": "req",
+      "answers": {
+        "a": "y",
+        "consent": false,
+        "nm": {
+          "given": "Ada",
+          "family": "Lovelace"
+        }
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "consent",
+            "code": "equals",
+            "message": "Please confirm",
+            "params": {
+              "value": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "a partial name misses a required part",
+      "form": "req",
+      "answers": {
+        "a": "y",
+        "consent": true,
+        "nm": {
+          "given": "Ada"
+        }
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "nm.family",
+            "code": "required"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a partial address reports missing parts in parts order",
+      "form": "req",
+      "answers": {
+        "a": "y",
+        "consent": true,
+        "nm": {
+          "given": "Ada",
+          "family": "Lovelace"
+        },
+        "ad": {
+          "line2": "Flat 2"
+        }
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "ad.line1",
+            "code": "required"
+          },
+          {
+            "path": "ad.city",
+            "code": "required"
+          },
+          {
+            "path": "ad.postalCode",
+            "code": "required"
+          }
+        ]
+      }
+    },
+    {
+      "name": "whitespace is a value",
+      "form": "req",
+      "answers": {
+        "a": " ",
+        "consent": true,
+        "nm": {
+          "given": "Ada",
+          "family": "Lovelace"
+        }
+      },
+      "expected": {
+        "errors": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,466 @@
+{
+  "description": "Normalisation (§6.5), type checking (§6.7) and submission data (§7.3).",
+  "forms": {
+    "allTypes": {
+      "schemaVersion": 1,
+      "key": "allTypes",
+      "title": "allTypes",
+      "pages": [
+        {
+          "key": "page1",
+          "elements": [
+            {
+              "type": "text",
+              "key": "t",
+              "label": "Text"
+            },
+            {
+              "type": "number",
+              "key": "n",
+              "label": "Number"
+            },
+            {
+              "type": "boolean",
+              "key": "b",
+              "label": "Boolean"
+            },
+            {
+              "type": "date",
+              "key": "d",
+              "label": "Date"
+            },
+            {
+              "type": "time",
+              "key": "tm",
+              "label": "Time"
+            },
+            {
+              "type": "datetime",
+              "key": "dt",
+              "label": "Date-time"
+            },
+            {
+              "type": "checkboxes",
+              "key": "cb",
+              "label": "Checkboxes",
+              "options": [
+                {
+                  "value": "a",
+                  "label": "a"
+                },
+                {
+                  "value": "b",
+                  "label": "b"
+                },
+                {
+                  "value": "c",
+                  "label": "c"
+                }
+              ]
+            },
+            {
+              "type": "radio",
+              "key": "r",
+              "label": "Radio",
+              "options": [
+                {
+                  "value": "x",
+                  "label": "x"
+                },
+                {
+                  "value": "y",
+                  "label": "y"
+                }
+              ]
+            },
+            {
+              "type": "name",
+              "key": "nm",
+              "label": "Name"
+            },
+            {
+              "type": "address",
+              "key": "ad",
+              "label": "Address"
+            },
+            {
+              "type": "file",
+              "key": "f",
+              "label": "Files",
+              "multiple": true
+            },
+            {
+              "type": "hidden",
+              "key": "h",
+              "label": "Hidden",
+              "valueType": "number"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "name": "valid values of every type",
+      "form": "allTypes",
+      "answers": {
+        "t": "hi",
+        "n": 3.5,
+        "b": false,
+        "d": "2024-02-29",
+        "tm": "23:59",
+        "dt": "2026-11-24T09:30:00.123+05:30",
+        "cb": ["a", "c"],
+        "r": "y",
+        "nm": {
+          "given": "Ada",
+          "family": "Lovelace"
+        },
+        "ad": {
+          "line1": "1 High Street",
+          "city": "Leeds",
+          "postalCode": "LS1 1AA"
+        },
+        "f": [
+          {
+            "id": "f1",
+            "name": "a.pdf",
+            "size": 10,
+            "contentType": "application/pdf"
+          }
+        ],
+        "h": 7
+      },
+      "expected": {
+        "errors": [],
+        "submission": {
+          "t": "hi",
+          "n": 3.5,
+          "b": false,
+          "d": "2024-02-29",
+          "tm": "23:59",
+          "dt": "2026-11-24T09:30:00.123+05:30",
+          "cb": ["a", "c"],
+          "r": "y",
+          "nm": {
+            "given": "Ada",
+            "family": "Lovelace"
+          },
+          "ad": {
+            "line1": "1 High Street",
+            "city": "Leeds",
+            "postalCode": "LS1 1AA"
+          },
+          "f": [
+            {
+              "id": "f1",
+              "name": "a.pdf",
+              "size": 10,
+              "contentType": "application/pdf"
+            }
+          ],
+          "h": 7
+        },
+        "outcome": null
+      }
+    },
+    {
+      "name": "empty values are normalised to null and omitted",
+      "form": "allTypes",
+      "answers": {
+        "t": "",
+        "n": null,
+        "cb": [],
+        "nm": {
+          "given": "",
+          "family": null
+        },
+        "ad": {},
+        "f": []
+      },
+      "expected": {
+        "errors": [],
+        "submission": {}
+      }
+    },
+    {
+      "name": "strings are not trimmed",
+      "form": "allTypes",
+      "answers": {
+        "t": "  a "
+      },
+      "expected": {
+        "errors": [],
+        "submission": {
+          "t": "  a "
+        }
+      }
+    },
+    {
+      "name": "unknown answer keys are ignored",
+      "form": "allTypes",
+      "answers": {
+        "t": "a",
+        "extra": 1
+      },
+      "expected": {
+        "errors": [],
+        "submission": {
+          "t": "a"
+        }
+      }
+    },
+    {
+      "name": "a numeric string is not a number",
+      "form": "allTypes",
+      "answers": {
+        "n": "12"
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "n",
+            "code": "type"
+          }
+        ],
+        "submission": {}
+      }
+    },
+    {
+      "name": "a boolean string is not a boolean",
+      "form": "allTypes",
+      "answers": {
+        "b": "true"
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "b",
+            "code": "type"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a datetime is not a date",
+      "form": "allTypes",
+      "answers": {
+        "d": "2026-11-24T00:00:00Z"
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "d",
+            "code": "type"
+          }
+        ]
+      }
+    },
+    {
+      "name": "an impossible date is not a date",
+      "form": "allTypes",
+      "answers": {
+        "d": "2026-02-30"
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "d",
+            "code": "type"
+          }
+        ]
+      }
+    },
+    {
+      "name": "time 24:00 is out of range",
+      "form": "allTypes",
+      "answers": {
+        "tm": "24:00"
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "tm",
+            "code": "type"
+          }
+        ]
+      }
+    },
+    {
+      "name": "time with seconds is valid",
+      "form": "allTypes",
+      "answers": {
+        "tm": "07:05:09"
+      },
+      "expected": {
+        "errors": [],
+        "submission": {
+          "tm": "07:05:09"
+        }
+      }
+    },
+    {
+      "name": "datetime requires an offset",
+      "form": "allTypes",
+      "answers": {
+        "dt": "2026-11-24T09:30:00"
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "dt",
+            "code": "type"
+          }
+        ]
+      }
+    },
+    {
+      "name": "datetime requires upper-case Z",
+      "form": "allTypes",
+      "answers": {
+        "dt": "2026-11-24T09:30:00z"
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "dt",
+            "code": "type"
+          }
+        ]
+      }
+    },
+    {
+      "name": "datetime requires seconds",
+      "form": "allTypes",
+      "answers": {
+        "dt": "2026-11-24T09:30Z"
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "dt",
+            "code": "type"
+          }
+        ]
+      }
+    },
+    {
+      "name": "checkboxes must not repeat a value",
+      "form": "allTypes",
+      "answers": {
+        "cb": ["a", "a"]
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "cb",
+            "code": "type"
+          }
+        ]
+      }
+    },
+    {
+      "name": "composite members must be listed in parts",
+      "form": "allTypes",
+      "answers": {
+        "nm": {
+          "given": "Ada",
+          "middle": "B",
+          "family": "Lovelace"
+        }
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "nm",
+            "code": "type"
+          }
+        ]
+      }
+    },
+    {
+      "name": "composite members must be strings",
+      "form": "allTypes",
+      "answers": {
+        "ad": {
+          "line1": 1,
+          "city": "Leeds",
+          "postalCode": "X"
+        }
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "ad",
+            "code": "type"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a file reference needs every member",
+      "form": "allTypes",
+      "answers": {
+        "f": [
+          {
+            "id": "f1",
+            "name": "a.pdf",
+            "contentType": "application/pdf"
+          }
+        ]
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "f",
+            "code": "type"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a file size must be an integer",
+      "form": "allTypes",
+      "answers": {
+        "f": [
+          {
+            "id": "f1",
+            "name": "a.pdf",
+            "size": 1.5,
+            "contentType": "application/pdf"
+          }
+        ]
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "f",
+            "code": "type"
+          }
+        ]
+      }
+    },
+    {
+      "name": "type errors follow document order",
+      "form": "allTypes",
+      "answers": {
+        "n": "x",
+        "t": 5
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "t",
+            "code": "type"
+          },
+          {
+            "path": "n",
+            "code": "type"
+          }
+        ],
+        "submission": {}
+      }
+    }
+  ]
+}

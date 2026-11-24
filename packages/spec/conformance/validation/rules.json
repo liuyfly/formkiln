@@ -1,0 +1,356 @@
+{
+  "description": "Visibility, effective values, calculated fields, submission data and outcomes (§7, §8).",
+  "forms": {
+    "employment": {
+      "schemaVersion": 1,
+      "key": "employment",
+      "title": "employment",
+      "pages": [
+        {
+          "key": "page1",
+          "elements": [
+            {
+              "type": "radio",
+              "key": "status",
+              "label": "Status",
+              "required": true,
+              "options": [
+                {
+                  "value": "employed",
+                  "label": "employed"
+                },
+                {
+                  "value": "student",
+                  "label": "student"
+                }
+              ]
+            },
+            {
+              "type": "panel",
+              "key": "job",
+              "visible": {
+                "==": [
+                  {
+                    "var": "status"
+                  },
+                  "employed"
+                ]
+              },
+              "elements": [
+                {
+                  "type": "text",
+                  "key": "employer",
+                  "label": "Employer",
+                  "required": true
+                },
+                {
+                  "type": "number",
+                  "key": "income",
+                  "label": "Income",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "type": "number",
+              "key": "rent",
+              "label": "Monthly rent"
+            },
+            {
+              "type": "hidden",
+              "key": "ratio",
+              "label": "Ratio",
+              "valueType": "number",
+              "calculate": {
+                "if": [
+                  {
+                    "!": {
+                      "empty": {
+                        "var": "income"
+                      }
+                    }
+                  },
+                  {
+                    "round": [
+                      {
+                        "/": [
+                          {
+                            "*": [
+                              {
+                                "var": "rent"
+                              },
+                              12
+                            ]
+                          },
+                          {
+                            "var": "income"
+                          }
+                        ]
+                      },
+                      2
+                    ]
+                  },
+                  null
+                ]
+              }
+            },
+            {
+              "type": "radio",
+              "key": "guarantor",
+              "label": "Guarantor",
+              "options": [
+                {
+                  "value": "yes",
+                  "label": "yes"
+                },
+                {
+                  "value": "no",
+                  "label": "no"
+                }
+              ],
+              "required": {
+                "!": {
+                  "<=": [
+                    {
+                      "var": "ratio"
+                    },
+                    0.4
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "key": "extra",
+          "visible": {
+            "==": [
+              {
+                "var": "guarantor"
+              },
+              "yes"
+            ]
+          },
+          "elements": [
+            {
+              "type": "text",
+              "key": "guarantorName",
+              "label": "Guarantor name",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "submit": {
+        "outcomes": [
+          {
+            "key": "withGuarantor",
+            "when": {
+              "==": [
+                {
+                  "var": "guarantor"
+                },
+                "yes"
+              ]
+            }
+          },
+          {
+            "key": "standard"
+          }
+        ]
+      }
+    },
+    "calcType": {
+      "schemaVersion": 1,
+      "key": "calcType",
+      "title": "calcType",
+      "pages": [
+        {
+          "key": "page1",
+          "elements": [
+            {
+              "type": "hidden",
+              "key": "x",
+              "label": "X",
+              "valueType": "string",
+              "calculate": {
+                "+": [1, 2]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "name": "employed applicant with a low ratio",
+      "form": "employment",
+      "answers": {
+        "status": "employed",
+        "employer": "Acme",
+        "income": 60000,
+        "rent": 1000
+      },
+      "expected": {
+        "errors": [],
+        "inactive": ["extra", "guarantorName"],
+        "submission": {
+          "status": "employed",
+          "employer": "Acme",
+          "income": 60000,
+          "rent": 1000,
+          "ratio": 0.2
+        },
+        "outcome": "standard"
+      }
+    },
+    {
+      "name": "inactive panel hides stale answers and makes the ratio null",
+      "form": "employment",
+      "answers": {
+        "status": "student",
+        "employer": "Old job",
+        "rent": 900
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "guarantor",
+            "code": "required"
+          }
+        ],
+        "inactive": ["job", "employer", "income", "extra", "guarantorName"],
+        "submission": {
+          "status": "student",
+          "rent": 900
+        },
+        "outcome": null
+      }
+    },
+    {
+      "name": "an answer activates a page",
+      "form": "employment",
+      "answers": {
+        "status": "student",
+        "rent": 900,
+        "guarantor": "yes",
+        "guarantorName": ""
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "guarantorName",
+            "code": "required"
+          }
+        ],
+        "inactive": ["job", "employer", "income"],
+        "submission": {
+          "status": "student",
+          "rent": 900,
+          "guarantor": "yes"
+        }
+      }
+    },
+    {
+      "name": "valid application with a guarantor",
+      "form": "employment",
+      "answers": {
+        "status": "student",
+        "rent": 900,
+        "guarantor": "yes",
+        "guarantorName": "Bob"
+      },
+      "expected": {
+        "errors": [],
+        "submission": {
+          "status": "student",
+          "rent": 900,
+          "guarantor": "yes",
+          "guarantorName": "Bob"
+        },
+        "outcome": "withGuarantor"
+      }
+    },
+    {
+      "name": "client values of calculated fields are replaced",
+      "form": "employment",
+      "answers": {
+        "status": "employed",
+        "employer": "A",
+        "income": 50000,
+        "rent": 1000,
+        "ratio": 99
+      },
+      "expected": {
+        "errors": [],
+        "submission": {
+          "status": "employed",
+          "employer": "A",
+          "income": 50000,
+          "rent": 1000,
+          "ratio": 0.24
+        },
+        "outcome": "standard"
+      }
+    },
+    {
+      "name": "inactive fields are not type checked",
+      "form": "employment",
+      "answers": {
+        "status": "student",
+        "income": "abc"
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "guarantor",
+            "code": "required"
+          }
+        ],
+        "submission": {
+          "status": "student"
+        }
+      }
+    },
+    {
+      "name": "errors follow document order across a panel",
+      "form": "employment",
+      "answers": {
+        "status": "employed",
+        "rent": 1000
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "employer",
+            "code": "required"
+          },
+          {
+            "path": "income",
+            "code": "required"
+          },
+          {
+            "path": "guarantor",
+            "code": "required"
+          }
+        ],
+        "outcome": null
+      }
+    },
+    {
+      "name": "a calculated value of the wrong type is a type error",
+      "form": "calcType",
+      "answers": {},
+      "expected": {
+        "errors": [
+          {
+            "path": "x",
+            "code": "type"
+          }
+        ],
+        "submission": {}
+      }
+    }
+  ]
+}

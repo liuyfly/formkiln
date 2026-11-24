@@ -186,7 +186,7 @@ Collects a list of items, each with the same child elements (for example, previo
 | `maxItems`    | integer ≥ 1 | no       | No limit if absent.                                             |
 | `elements`    | Element[]   | yes      | Fields, panels and content. Repeaters MUST NOT be nested in v1. |
 
-The value of a repeater is an array of **item objects**. Each item object maps the keys of the repeater's descendant fields to their values. Child keys are unique within the repeater and MAY reuse keys used outside it.
+The value of a repeater is an array of **item objects**. Each item object maps the keys of the repeater's descendant fields to their values. Child keys are unique within the repeater and MAY reuse keys used outside it. The effective value of a repeater, as seen by rules, is the array of its items, where each item holds the effective values of its children.
 
 Inside a repeater, rules reference the current item with `$item` (for example `{"var": "$item.movedIn"}`) and its zero-based position with `$index` (see [operators-v1.md §2](operators-v1.md#2-data-access)).
 
@@ -253,26 +253,26 @@ A `date` value MUST be a valid calendar date (`2026-02-30` is invalid). A `datet
 
 **Options.** `options` is a non-empty array of `{ "value": string, "label": Text }`. Option values MUST be unique within the field and SHOULD be stable identifiers, not display text. A value that is not one of the options is invalid (`option` error). The order of a `checkboxes` value is not significant; implementations SHOULD store it in option order.
 
-**Built-in format checks** (portable regular expressions, see [operators-v1.md §7](operators-v1.md#7-strings)):
+**Built-in format checks** use the [portable regular expressions](operators-v1.md#71-portable-regular-expressions) below, always as full matches:
 
-| Check          | Rule                                              |
-| -------------- | ------------------------------------------------- |
-| `format.email` | `^[^\s@]+@[^\s@]+\.[^\s@]+$`                      |
-| `format.phone` | `^\+?[0-9 ()\-]{6,20}$`                           |
-| `format.url`   | an absolute URL whose scheme is `http` or `https` |
+| Check          | Pattern                           |
+| -------------- | --------------------------------- |
+| `format.email` | `[^\s@]+@[^\s@]+\.[^\s@]+`        |
+| `format.phone` | `\+?[0-9 ()\-]{6,20}`             |
+| `format.url`   | `https?://[^\s/?#]+(?:[/?#]\S*)?` |
 
 ### 6.3 Composite values
 
 **Name** — object with optional string members `title`, `given`, `middle`, `family`.
 
-**Address** — object with optional string members `line1`, `line2`, `city`, `region`, `postalCode`, `country` (ISO 3166-1 alpha-2, upper case).
+**Address** — object with optional string members `line1`, `line2`, `city`, `region`, `postalCode`, `country`. `country` SHOULD be an ISO 3166-1 alpha-2 code in upper case; v1 does not validate it.
 
 | Property        | Default for `name`    | Default for `address`                                 | Description                                                                           |
 | --------------- | --------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | `parts`         | `["given", "family"]` | `["line1", "line2", "city", "postalCode", "country"]` | Members shown, in order.                                                              |
 | `requiredParts` | `["given", "family"]` | `["line1", "city", "postalCode"]`                     | Members that must be filled when the value is not empty. MUST be a subset of `parts`. |
 
-A composite value MUST NOT contain members outside `parts`. If any member is filled, every member in `requiredParts` MUST be filled (`required` error with the member path, for example `address.city`). If the field is `required`, the value MUST NOT be empty.
+If any member is filled, every member in `requiredParts` MUST be filled. Each missing member is reported as a `required` error with the member path (for example `currentAddress.city`), in `parts` order. If the field is `required`, the value MUST NOT be empty.
 
 ### 6.4 File references
 
@@ -282,17 +282,42 @@ A file value is an array of objects returned by the server's upload API:
 { "id": "f_01JD8X…", "name": "payslip.pdf", "size": 182044, "contentType": "application/pdf" }
 ```
 
-Form documents never contain file contents. If `multiple` is `false`, the array MUST NOT have more than one element.
+`id`, `name` and `contentType` are non-empty strings and `size` is an integer ≥ 0; no other members are allowed. Form documents never contain file contents. If `multiple` is `false`, the array MUST NOT have more than one element (`maxItems` error with `{ "value": 1 }`).
 
 ### 6.5 Empty values
 
-The canonical empty value is `null`. Implementations MUST normalise `""`, `[]`, `{}` and composite objects whose members are all empty to `null` before evaluating rules, validating or submitting. Strings are otherwise stored exactly as entered (no implicit trimming).
+The canonical empty value is `null`. Before evaluating rules, validating or submitting, implementations MUST normalise answers as follows:
+
+- `""`, `[]` and `{}` become `null`;
+- in a `name` or `address` value, members equal to `""` or `null` are removed; if no member remains, the value becomes `null`;
+- inside repeater items, each child value is normalised individually. An item object itself is never turned into `null`, but a repeater value of `[]` becomes `null`.
+
+Strings are otherwise kept exactly as entered: there is no implicit trimming.
 
 ### 6.6 Initial values and prefill
 
-The initial value of a field is, in order of precedence: the draft value, the prefill value supplied by the host, the `defaultValue`, then `null`.
+The initial value of a field is, in order of precedence: the draft value, the prefill value supplied by the host, the `defaultValue`, then `null`. Initial values are applied by renderers; servers validate submitted answers as they are and never insert defaults.
 
 Prefill and draft values MUST match the field's value type. A value that does not match MUST be rejected and reported to the host (for example through an `onPrefillError` callback). It MUST NOT be coerced.
+
+### 6.7 Type checking
+
+After normalisation, every non-null value is checked against its field's value type:
+
+| Value type        | Valid when                                                                                                                                                                                                           |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `string`          | a string                                                                                                                                                                                                             |
+| `number`          | a finite JSON number                                                                                                                                                                                                 |
+| `boolean`         | `true` or `false`                                                                                                                                                                                                    |
+| `date`            | a valid calendar date `YYYY-MM-DD` between `0001-01-01` and `9999-12-31`                                                                                                                                             |
+| `time`            | `HH:mm` or `HH:mm:ss` with `HH` 00–23 and `mm`/`ss` 00–59                                                                                                                                                            |
+| `datetime`        | `YYYY-MM-DDTHH:mm:ss`, optionally with 1–9 fractional digits, followed by `Z` or `±HH:mm`. The date must be valid, the time ranges are as for `time` and the offset is at most `±23:59`. `T` and `Z` are upper case. |
+| `string[]`        | an array of unique strings                                                                                                                                                                                           |
+| `file[]`          | an array of valid file references (§6.4)                                                                                                                                                                             |
+| `name`, `address` | an object whose members are strings and are listed in `parts`                                                                                                                                                        |
+| `item[]`          | an array of objects                                                                                                                                                                                                  |
+
+A value of the wrong type produces exactly one `type` error for that path, if the field is active. For every other purpose it is treated as `null`. Inside repeater items, unknown child keys are ignored.
 
 ## 7. Rules
 
@@ -312,7 +337,9 @@ A field whose `required` condition holds MUST have a non-empty value; otherwise 
 
 ### 7.3 Submission data
 
-The submitted answers contain the values of **active** fields only (including active `hidden` and calculated fields). Inactive values are omitted, whatever `inactiveValues` says. Servers MUST recompute visibility, calculated values and validation from the submitted answers and MUST NOT trust any client-computed state.
+The **submission** is the object that is stored. It contains the key and effective value of every active field whose effective value is not `null`, including active `hidden` and calculated fields. A repeater contributes an array of item objects built the same way from its children. Inactive values are always omitted, whatever `inactiveValues` says. Answers for keys that are not fields of the form, and client-supplied values of calculated fields, are ignored.
+
+Servers MUST recompute visibility, calculated values and validation from the submitted answers and MUST NOT trust any client-computed state.
 
 ### 7.4 Calculated fields
 
@@ -323,9 +350,16 @@ A field with `calculate` is calculated:
 - if the result does not match the field's value type, the value is `null` and a `type` error is reported;
 - servers MUST recompute it and replace any client-supplied value.
 
+The expression is evaluated even when the field is inactive (rules never see the result then, because the effective value is `null`).
+
 ### 7.5 Dependencies and cycles
 
-Each rule depends on the fields it references, and each field's effective value depends on the `visible` conditions of the field and its ancestors. These dependencies form a graph that MUST be acyclic. A form document with a cycle is invalid (§10).
+The value of an element depends on:
+
+- the fields referenced by its `calculate` expression;
+- the fields referenced by its own `visible` condition and by the `visible` conditions of its ancestors.
+
+Inside a repeater, `$item.<child>` refers to the child of the same item. These dependencies form a graph that MUST be acyclic, and a form document with a cycle is invalid (§10). `required`, `readOnly`, validators and outcomes only consume values, so they cannot create cycles.
 
 ### 7.6 Evaluation instant
 
@@ -333,7 +367,7 @@ Each rule depends on the fields it references, and each field's effective value 
 
 ## 8. Submit outcomes
 
-After a successful validation, `submit.outcomes` decides what happens next. Outcomes are evaluated in order and the first whose `when` condition holds is selected. An outcome without `when` always matches and SHOULD be last.
+When validation finds no errors, `submit.outcomes` decides what happens next. Outcomes are evaluated in order and the first whose `when` condition holds is selected. An outcome without `when` always matches and SHOULD be last.
 
 ```json
 "submit": {
@@ -351,50 +385,70 @@ After a successful validation, `submit.outcomes` decides what happens next. Outc
 | `message`  | Text      | no       | Shown after submission.                                                                                 |
 | `redirect` | string    | no       | Absolute `https` URL or a path starting with `/`. Hosts MAY override the navigation.                    |
 
-If no outcome matches, the outcome is `null` and the host decides what to do. The server computes the outcome independently and returns it with the submission result.
+If validation reports errors, or no outcome matches, the outcome is `null`. The server computes the outcome independently and returns it with the submission result.
 
 ## 9. Validators
 
-Validators run only on **active** fields with a **non-empty** effective value (emptiness is handled by `required`). Each validator MAY define a `message` (Text) that replaces the default message.
+Validators run only on **active** fields with a **non-empty**, correctly typed effective value (emptiness is handled by `required`). Each validator MAY define a `message` (Text) that replaces the default message.
 
-| `type`        | Applies to                     | Parameters                                                             | Error code    |
-| ------------- | ------------------------------ | ---------------------------------------------------------------------- | ------------- |
-| `minLength`   | `string`                       | `value`: integer ≥ 0                                                   | `minLength`   |
-| `maxLength`   | `string`                       | `value`: integer ≥ 0                                                   | `maxLength`   |
-| `pattern`     | `string`                       | `value`: portable regex (full match)                                   | `pattern`     |
-| `min`         | `number`                       | `value`: number                                                        | `min`         |
-| `max`         | `number`                       | `value`: number                                                        | `max`         |
-| `integer`     | `number`                       | —                                                                      | `integer`     |
-| `minDate`     | `date`                         | `value`: date literal or Expression returning a date                   | `minDate`     |
-| `maxDate`     | `date`                         | `value`: date literal or Expression returning a date                   | `maxDate`     |
-| `minItems`    | `string[]`, `file[]`, `item[]` | `value`: integer ≥ 0                                                   | `minItems`    |
-| `maxItems`    | `string[]`, `file[]`, `item[]` | `value`: integer ≥ 1                                                   | `maxItems`    |
-| `maxFileSize` | `file[]`                       | `value`: bytes, integer ≥ 1 (per file)                                 | `maxFileSize` |
-| `fileTypes`   | `file[]`                       | `value`: MIME types or extensions                                      | `fileType`    |
-| `equals`      | any                            | `value`: Value                                                         | `equals`      |
-| `expression`  | any                            | `rule`: Expression that must evaluate to `true`; `message` is required | `expression`  |
+| `type`        | Applies to           | Parameters                                                           | Fails when                                        | Error code    |
+| ------------- | -------------------- | -------------------------------------------------------------------- | ------------------------------------------------- | ------------- |
+| `minLength`   | `string`             | `value`: integer ≥ 0                                                 | fewer code points than `value`                    | `minLength`   |
+| `maxLength`   | `string`             | `value`: integer ≥ 0                                                 | more code points than `value`                     | `maxLength`   |
+| `pattern`     | `string`             | `value`: portable regex                                              | the whole string does not match                   | `pattern`     |
+| `min`         | `number`             | `value`: number                                                      | the number is less than `value`                   | `min`         |
+| `max`         | `number`             | `value`: number                                                      | the number is greater than `value`                | `max`         |
+| `integer`     | `number`             | —                                                                    | the number has a fractional part                  | `integer`     |
+| `minDate`     | `date`               | `value`: date literal or Expression returning a date                 | the date is before `value`                        | `minDate`     |
+| `maxDate`     | `date`               | `value`: date literal or Expression returning a date                 | the date is after `value`                         | `maxDate`     |
+| `minItems`    | `string[]`, `file[]` | `value`: integer ≥ 0                                                 | fewer elements than `value`                       | `minItems`    |
+| `maxItems`    | `string[]`, `file[]` | `value`: integer ≥ 1                                                 | more elements than `value`                        | `maxItems`    |
+| `maxFileSize` | `file[]`             | `value`: bytes, integer ≥ 1                                          | a file is larger than `value` (reported per file) | `maxFileSize` |
+| `fileTypes`   | `file[]`             | `value`: MIME types, `type/*` wildcards or extensions such as `.pdf` | a file matches no entry (reported per file)       | `fileType`    |
+| `equals`      | any                  | `value`: Value                                                       | the value is not `==` to `value`                  | `equals`      |
+| `expression`  | any                  | `rule`: Expression; `message` is required                            | the rule does not evaluate to `true`              | `expression`  |
 
-String lengths are counted in Unicode code points. Inside an `expression` validator, `{"var": "$value"}` refers to the field's own effective value.
-
-Repeater-level `minItems`/`maxItems` are declared on the repeater itself (§5.3) and use the same error codes.
+- Inside an `expression` validator, `{"var": "$value"}` refers to the field's own effective value. Inside a repeater, `$item` and `$index` also refer to the current item.
+- If a `minDate`/`maxDate` expression does not evaluate to a valid date, the validator is skipped.
+- `fileTypes` compares MIME types case-insensitively (`image/*` matches any `image/` type), and extensions case-insensitively against the end of the file `name`.
+- Per-file errors use the path of the file (for example `payslips.1`).
+- A repeater's own `minItems`/`maxItems` (§5.3) are checked whenever the repeater is active, **including when it is empty**, and are reported at the repeater path with the same codes.
 
 ## 10. Static validity
 
 A form document is valid only if it conforms to the [JSON Schema](../schema/form-v1.schema.json) **and** satisfies these rules, which a JSON Schema cannot express:
 
-1. Keys are unique as described in §3.2; outcome keys are unique among outcomes.
-2. Every `var` path references an existing field key, `$item`/`$index` inside a repeater, `$value` inside an `expression` validator, or `$this`/`$thisIndex` inside an array operator.
-3. Every operator is defined in [operators-v1.md](operators-v1.md), with the documented number of arguments.
-4. The dependency graph (§7.5) is acyclic.
-5. `defaultValue` and `equals` values match the field's value type; option values are unique; `requiredParts` ⊆ `parts`.
-6. Validators are applied only to the value types listed in §9.
-7. Repeaters are not nested.
+| Code                  | Rule                                                                                                                                                                                                                                       | Pointer                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| `duplicateKey`        | Keys are unique as described in §3.2.                                                                                                                                                                                                      | the `key` of every occurrence after the first             |
+| `duplicateOutcomeKey` | Outcome keys are unique.                                                                                                                                                                                                                   | the `key` of every occurrence after the first             |
+| `varPath`             | The path argument of every `var` is a string literal.                                                                                                                                                                                      | the `var` operation                                       |
+| `unknownReference`    | Every `var` path starts with a field or repeater key defined outside any repeater, `$item`/`$index` inside a repeater, `$value` inside an `expression` validator, or `$this`/`$thisIndex` inside the second argument of an array operator. | the `var` operation                                       |
+| `arity`               | Every operator has an allowed number of arguments ([operators-v1.md §10](operators-v1.md#10-arity)).                                                                                                                                       | the operation                                             |
+| `invalidPattern`      | Every `pattern` validator value and every literal `matches` pattern is a valid portable regular expression.                                                                                                                                | the pattern string                                        |
+| `cycle`               | The dependency graph (§7.5) is acyclic. Reported once per cycle.                                                                                                                                                                           | the field in the cycle that appears first in the document |
+| `valueType`           | `defaultValue` and `equals` values match the field's value type (§6.7).                                                                                                                                                                    | the offending value                                       |
+| `duplicateOption`     | Option values are unique within a field.                                                                                                                                                                                                   | the `value` of every occurrence after the first           |
+| `requiredParts`       | `requiredParts` ⊆ `parts`.                                                                                                                                                                                                                 | `requiredParts`                                           |
+| `validatorType`       | Validators are applied only to the value types listed in §9.                                                                                                                                                                               | the validator                                             |
 
-Implementations MUST refuse to publish or render an invalid form document and MUST report every problem found, each with a JSON Pointer to the offending location.
+Each error is reported as `{ "pointer": "<JSON Pointer>", "code": "<code>" }`, where the pointer ([RFC 6901](https://www.rfc-editor.org/rfc/rfc6901)) locates the offending value. For example, the `/` operator is escaped as `~1`. Errors are compared as an unordered set.
 
-## 11. Validation results
+Implementations MUST refuse to publish or render an invalid form document and MUST report every problem found.
 
-Validating answers against a form produces a list of errors:
+## 11. Validating answers
+
+### 11.1 Procedure
+
+Given a valid form document, answers, an evaluation instant and optionally a locale:
+
+1. Normalise the answers (§6.5) and type-check them (§6.7).
+2. Compute calculated values (§7.4), then visibility and effective values, in dependency order (§7.5).
+3. Validate every active field (§7.2, §6.3, §6.4, §9) and every active repeater, in document order.
+4. If there are no errors, select the outcome (§8).
+5. Build the submission (§7.3).
+
+### 11.2 Result
 
 ```json
 {
@@ -406,18 +460,23 @@ Validating answers against a form produces a list of errors:
       "message": "You must be at least 18 years old."
     },
     { "path": "previousAddresses.0.address.city", "code": "required" }
-  ]
+  ],
+  "outcome": null
 }
 ```
 
-| Property  | Type   | Description                                                                                                                       |
-| --------- | ------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| `path`    | string | Dot path to the value: field key, then repeater index and child key, then composite member.                                       |
-| `code`    | string | One of the codes in §6.2 and §9, `required`, `type` or `option`.                                                                  |
-| `message` | string | Optional. The resolved custom message, if the form defines one. Renderers otherwise use their own localised default for the code. |
-| `params`  | object | Optional parameters for message templates (for example `{ "value": 8 }` for `minLength`).                                         |
+| Property  | Type   | Description                                                                                                                                                                                                                                |
+| --------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `path`    | string | Dot path to the value: field key, then repeater index and child key, then composite member or file index.                                                                                                                                  |
+| `code`    | string | `required`, `type`, `option`, a `format.*` code (§6.2) or a validator code (§9).                                                                                                                                                           |
+| `message` | string | Present only when the form defines a custom message (`requiredMessage`, or a validator `message`), resolved for the requested locale with a fallback to `defaultLocale`. Renderers otherwise use their own localised default for the code. |
+| `params`  | object | For validator codes, `{ "value": … }` holding the validator's value (the evaluated date for `minDate`/`maxDate`). Absent for other codes.                                                                                                  |
 
-Errors are ordered by the position of the field in the document (page, then element order, then repeater index). A value that does not match its value type produces a single `type` error and no further errors for that path.
+### 11.3 Error order and precedence
+
+- Errors are ordered by the position of the field in the document (pages, then elements depth-first). A repeater's own errors come first, then its items in index order, each in element order.
+- For one field, at most one of these is reported, in this priority: `type`, then `required`.
+- Otherwise, a composite field reports its missing members (§6.3); a choice field reports `option` when a value (or an element of a `checkboxes` value) is not an option; a `format.*` check is reported; and then every failing validator is reported in declaration order. Per-file errors follow file index order within their validator.
 
 Renderers MUST display every error next to its field and, on submit, MUST navigate to the page of the first error and move focus to that field.
 

@@ -1,0 +1,571 @@
+{
+  "description": "Validators, built-in format checks, option checks and error precedence (§6.2, §9, §11.3).",
+  "forms": {
+    "val": {
+      "schemaVersion": 1,
+      "key": "val",
+      "title": "val",
+      "settings": {
+        "timeZone": "Europe/London"
+      },
+      "pages": [
+        {
+          "key": "page1",
+          "elements": [
+            {
+              "type": "text",
+              "key": "code",
+              "label": "Code",
+              "validators": [
+                {
+                  "type": "minLength",
+                  "value": 2
+                },
+                {
+                  "type": "maxLength",
+                  "value": 4
+                },
+                {
+                  "type": "pattern",
+                  "value": "[A-Z]+"
+                }
+              ]
+            },
+            {
+              "type": "number",
+              "key": "qty",
+              "label": "Quantity",
+              "validators": [
+                {
+                  "type": "min",
+                  "value": 1
+                },
+                {
+                  "type": "max",
+                  "value": 10
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            {
+              "type": "date",
+              "key": "start",
+              "label": "Start",
+              "validators": [
+                {
+                  "type": "minDate",
+                  "value": {
+                    "date.today": []
+                  }
+                },
+                {
+                  "type": "maxDate",
+                  "value": "2030-12-31"
+                }
+              ]
+            },
+            {
+              "type": "checkboxes",
+              "key": "tags",
+              "label": "Tags",
+              "options": [
+                {
+                  "value": "a",
+                  "label": "a"
+                },
+                {
+                  "value": "b",
+                  "label": "b"
+                },
+                {
+                  "value": "c",
+                  "label": "c"
+                }
+              ],
+              "validators": [
+                {
+                  "type": "minItems",
+                  "value": 2
+                },
+                {
+                  "type": "maxItems",
+                  "value": 2
+                }
+              ]
+            },
+            {
+              "type": "file",
+              "key": "docs",
+              "label": "Documents",
+              "multiple": true,
+              "validators": [
+                {
+                  "type": "maxItems",
+                  "value": 2
+                },
+                {
+                  "type": "maxFileSize",
+                  "value": 1000
+                },
+                {
+                  "type": "fileTypes",
+                  "value": [".pdf", "image/*"]
+                }
+              ]
+            },
+            {
+              "type": "file",
+              "key": "single",
+              "label": "Single file"
+            },
+            {
+              "type": "email",
+              "key": "email",
+              "label": "Email"
+            },
+            {
+              "type": "phone",
+              "key": "phone",
+              "label": "Phone"
+            },
+            {
+              "type": "url",
+              "key": "url",
+              "label": "Website"
+            },
+            {
+              "type": "radio",
+              "key": "color",
+              "label": "Colour",
+              "options": [
+                {
+                  "value": "red",
+                  "label": "red"
+                },
+                {
+                  "value": "blue",
+                  "label": "blue"
+                }
+              ]
+            },
+            {
+              "type": "number",
+              "key": "age",
+              "label": "Age",
+              "validators": [
+                {
+                  "type": "expression",
+                  "rule": {
+                    ">=": [
+                      {
+                        "var": "$value"
+                      },
+                      18
+                    ]
+                  },
+                  "message": "Too young"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "name": "valid values pass every validator",
+      "form": "val",
+      "answers": {
+        "code": "AB",
+        "qty": 3,
+        "start": "2026-11-24",
+        "tags": ["a", "b"],
+        "docs": [
+          {
+            "id": "d1",
+            "name": "a.pdf",
+            "size": 500,
+            "contentType": "application/pdf"
+          }
+        ],
+        "single": [
+          {
+            "id": "s1",
+            "name": "x.txt",
+            "size": 1,
+            "contentType": "text/plain"
+          }
+        ],
+        "email": "a@b.co",
+        "phone": "+44 20 7946 0958",
+        "url": "https://example.com/x?y=1",
+        "color": "red",
+        "age": 18
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": []
+      }
+    },
+    {
+      "name": "validators skip empty values",
+      "form": "val",
+      "answers": {
+        "code": ""
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": []
+      }
+    },
+    {
+      "name": "string length counts code points",
+      "form": "val",
+      "answers": {
+        "code": "😀😀"
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": [
+          {
+            "path": "code",
+            "code": "pattern",
+            "params": {
+              "value": "[A-Z]+"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "every failing validator is reported in declaration order",
+      "form": "val",
+      "answers": {
+        "code": "abcde"
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": [
+          {
+            "path": "code",
+            "code": "maxLength",
+            "params": {
+              "value": 4
+            }
+          },
+          {
+            "path": "code",
+            "code": "pattern"
+          }
+        ]
+      }
+    },
+    {
+      "name": "max and integer",
+      "form": "val",
+      "answers": {
+        "qty": 10.5
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": [
+          {
+            "path": "qty",
+            "code": "max",
+            "params": {
+              "value": 10
+            }
+          },
+          {
+            "path": "qty",
+            "code": "integer"
+          }
+        ]
+      }
+    },
+    {
+      "name": "min is inclusive",
+      "form": "val",
+      "answers": {
+        "qty": 1
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": []
+      }
+    },
+    {
+      "name": "below min",
+      "form": "val",
+      "answers": {
+        "qty": 0
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": [
+          {
+            "path": "qty",
+            "code": "min",
+            "params": {
+              "value": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "minDate evaluates date.today in the form time zone",
+      "form": "val",
+      "answers": {
+        "start": "2026-11-23"
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": [
+          {
+            "path": "start",
+            "code": "minDate",
+            "params": {
+              "value": "2026-11-24"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "maxDate with a literal date",
+      "form": "val",
+      "answers": {
+        "start": "2031-01-01"
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": [
+          {
+            "path": "start",
+            "code": "maxDate",
+            "params": {
+              "value": "2030-12-31"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "too few checkboxes",
+      "form": "val",
+      "answers": {
+        "tags": ["a"]
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": [
+          {
+            "path": "tags",
+            "code": "minItems",
+            "params": {
+              "value": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "too many checkboxes",
+      "form": "val",
+      "answers": {
+        "tags": ["a", "b", "c"]
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": [
+          {
+            "path": "tags",
+            "code": "maxItems",
+            "params": {
+              "value": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "radio value outside the options",
+      "form": "val",
+      "answers": {
+        "color": "green"
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": [
+          {
+            "path": "color",
+            "code": "option"
+          }
+        ]
+      }
+    },
+    {
+      "name": "checkbox value outside the options",
+      "form": "val",
+      "answers": {
+        "tags": ["a", "z"]
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": [
+          {
+            "path": "tags",
+            "code": "option"
+          }
+        ]
+      }
+    },
+    {
+      "name": "file validators report per file",
+      "form": "val",
+      "answers": {
+        "docs": [
+          {
+            "id": "d1",
+            "name": "a.pdf",
+            "size": 500,
+            "contentType": "application/pdf"
+          },
+          {
+            "id": "d2",
+            "name": "b.exe",
+            "size": 2000,
+            "contentType": "application/octet-stream"
+          },
+          {
+            "id": "d3",
+            "name": "c.PNG",
+            "size": 10,
+            "contentType": "IMAGE/PNG"
+          }
+        ]
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": [
+          {
+            "path": "docs",
+            "code": "maxItems",
+            "params": {
+              "value": 2
+            }
+          },
+          {
+            "path": "docs.1",
+            "code": "maxFileSize",
+            "params": {
+              "value": 1000
+            }
+          },
+          {
+            "path": "docs.1",
+            "code": "fileType",
+            "params": {
+              "value": [".pdf", "image/*"]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "a single file field accepts one file",
+      "form": "val",
+      "answers": {
+        "single": [
+          {
+            "id": "s1",
+            "name": "a.pdf",
+            "size": 10,
+            "contentType": "application/pdf"
+          },
+          {
+            "id": "s2",
+            "name": "a.pdf",
+            "size": 10,
+            "contentType": "application/pdf"
+          }
+        ]
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": [
+          {
+            "path": "single",
+            "code": "maxItems",
+            "params": {
+              "value": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "format checks",
+      "form": "val",
+      "answers": {
+        "email": "a@b",
+        "phone": "12345",
+        "url": "ftp://example.com"
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": [
+          {
+            "path": "email",
+            "code": "format.email"
+          },
+          {
+            "path": "phone",
+            "code": "format.phone"
+          },
+          {
+            "path": "url",
+            "code": "format.url"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a URL needs a host",
+      "form": "val",
+      "answers": {
+        "url": "https://"
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": [
+          {
+            "path": "url",
+            "code": "format.url"
+          }
+        ]
+      }
+    },
+    {
+      "name": "expression validator with $value",
+      "form": "val",
+      "answers": {
+        "age": 17
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "expected": {
+        "errors": [
+          {
+            "path": "age",
+            "code": "expression",
+            "message": "Too young"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,1737 @@
+{
+  "description": "Static validity of form documents (§10). Expected errors are compared as an unordered set.",
+  "cases": [
+    {
+      "name": "the rental application example is valid",
+      "form": {
+        "schemaVersion": 1,
+        "key": "rentalApplication",
+        "title": {
+          "en": "Rental application",
+          "zh-CN": "租房申请"
+        },
+        "description": "A fictional example that exercises most of Form Schema v1.",
+        "settings": {
+          "navigation": "paged",
+          "timeZone": "Europe/London",
+          "defaultLocale": "en",
+          "locales": ["en", "zh-CN"],
+          "inactiveValues": "retain"
+        },
+        "pages": [
+          {
+            "key": "applicantPage",
+            "title": "About you",
+            "elements": [
+              {
+                "type": "content",
+                "key": "intro",
+                "format": "markdown",
+                "text": "It takes about **10 minutes**. You can save and continue later."
+              },
+              {
+                "type": "name",
+                "key": "applicantName",
+                "label": "Full name",
+                "parts": ["title", "given", "family"],
+                "required": true
+              },
+              {
+                "type": "email",
+                "key": "email",
+                "label": "Email",
+                "required": true,
+                "autocomplete": "email"
+              },
+              {
+                "type": "phone",
+                "key": "phone",
+                "label": "Mobile number",
+                "required": true,
+                "autocomplete": "tel"
+              },
+              {
+                "type": "date",
+                "key": "dateOfBirth",
+                "label": "Date of birth",
+                "required": true,
+                "sensitive": true,
+                "validators": [
+                  {
+                    "type": "expression",
+                    "rule": {
+                      ">=": [
+                        {
+                          "date.diff": [
+                            {
+                              "var": "$value"
+                            },
+                            {
+                              "date.today": []
+                            },
+                            "year"
+                          ]
+                        },
+                        18
+                      ]
+                    },
+                    "message": {
+                      "en": "You must be at least 18 years old.",
+                      "zh-CN": "申请人须年满 18 岁。"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "key": "homePage",
+            "title": "Where you live",
+            "elements": [
+              {
+                "type": "address",
+                "key": "currentAddress",
+                "label": "Current address",
+                "required": true
+              },
+              {
+                "type": "date",
+                "key": "movedIn",
+                "label": "When did you move in?",
+                "required": true,
+                "validators": [
+                  {
+                    "type": "maxDate",
+                    "value": {
+                      "date.today": []
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "repeater",
+                "key": "previousAddresses",
+                "label": "Previous addresses in the last 3 years",
+                "itemLabel": "Previous address",
+                "visible": {
+                  "<": [
+                    {
+                      "date.diff": [
+                        {
+                          "var": "movedIn"
+                        },
+                        {
+                          "date.today": []
+                        },
+                        "year"
+                      ]
+                    },
+                    3
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 5,
+                "elements": [
+                  {
+                    "type": "address",
+                    "key": "address",
+                    "label": "Address",
+                    "required": true
+                  },
+                  {
+                    "type": "date",
+                    "key": "from",
+                    "label": "From",
+                    "required": true
+                  },
+                  {
+                    "type": "date",
+                    "key": "to",
+                    "label": "To",
+                    "required": true,
+                    "validators": [
+                      {
+                        "type": "expression",
+                        "rule": {
+                          ">=": [
+                            {
+                              "date.diff": [
+                                {
+                                  "var": "$item.from"
+                                },
+                                {
+                                  "var": "$value"
+                                },
+                                "day"
+                              ]
+                            },
+                            0
+                          ]
+                        },
+                        "message": "The end date must be after the start date."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "key": "incomePage",
+            "title": "Income",
+            "elements": [
+              {
+                "type": "radio",
+                "key": "employmentStatus",
+                "label": "Employment status",
+                "required": true,
+                "options": [
+                  {
+                    "value": "employed",
+                    "label": "Employed"
+                  },
+                  {
+                    "value": "selfEmployed",
+                    "label": "Self-employed"
+                  },
+                  {
+                    "value": "student",
+                    "label": "Student"
+                  },
+                  {
+                    "value": "other",
+                    "label": "Other"
+                  }
+                ]
+              },
+              {
+                "type": "panel",
+                "key": "employmentPanel",
+                "title": "Employment details",
+                "visible": {
+                  "in": [
+                    {
+                      "var": "employmentStatus"
+                    },
+                    ["employed", "selfEmployed"]
+                  ]
+                },
+                "elements": [
+                  {
+                    "type": "text",
+                    "key": "employerName",
+                    "label": "Employer or business name",
+                    "required": true
+                  },
+                  {
+                    "type": "number",
+                    "key": "annualIncome",
+                    "label": "Annual income before tax",
+                    "prefix": "£",
+                    "required": true,
+                    "validators": [
+                      {
+                        "type": "min",
+                        "value": 0
+                      },
+                      {
+                        "type": "integer"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "number",
+                "key": "monthlyRent",
+                "label": "Monthly rent of the property",
+                "prefix": "£",
+                "required": true,
+                "validators": [
+                  {
+                    "type": "min",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "type": "hidden",
+                "key": "rentToIncomeRatio",
+                "label": "Rent-to-income ratio",
+                "valueType": "number",
+                "calculate": {
+                  "if": [
+                    {
+                      "!": {
+                        "empty": {
+                          "var": "annualIncome"
+                        }
+                      }
+                    },
+                    {
+                      "round": [
+                        {
+                          "/": [
+                            {
+                              "*": [
+                                {
+                                  "var": "monthlyRent"
+                                },
+                                12
+                              ]
+                            },
+                            {
+                              "var": "annualIncome"
+                            }
+                          ]
+                        },
+                        2
+                      ]
+                    },
+                    null
+                  ]
+                }
+              },
+              {
+                "type": "radio",
+                "key": "hasGuarantor",
+                "label": "Do you have a guarantor?",
+                "required": {
+                  "!": {
+                    "<=": [
+                      {
+                        "var": "rentToIncomeRatio"
+                      },
+                      0.4
+                    ]
+                  }
+                },
+                "description": "Required when the yearly rent is more than 40% of your income, or no income is declared.",
+                "options": [
+                  {
+                    "value": "yes",
+                    "label": "Yes"
+                  },
+                  {
+                    "value": "no",
+                    "label": "No"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "key": "bankPage",
+            "title": "Bank details",
+            "elements": [
+              {
+                "type": "text",
+                "key": "sortCode",
+                "label": "Sort code",
+                "placeholder": "12-34-56",
+                "required": true,
+                "sensitive": true,
+                "validators": [
+                  {
+                    "type": "pattern",
+                    "value": "\\d{2}-?\\d{2}-?\\d{2}",
+                    "message": "Enter a 6-digit sort code, like 12-34-56."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "key": "accountNumber",
+                "label": "Account number",
+                "required": true,
+                "sensitive": true,
+                "validators": [
+                  {
+                    "type": "pattern",
+                    "value": "\\d{8}",
+                    "message": "Enter an 8-digit account number."
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "key": "payslips",
+                "label": "Recent payslips",
+                "multiple": true,
+                "accept": ["application/pdf", "image/jpeg", "image/png"],
+                "visible": {
+                  "==": [
+                    {
+                      "var": "employmentStatus"
+                    },
+                    "employed"
+                  ]
+                },
+                "validators": [
+                  {
+                    "type": "maxItems",
+                    "value": 3
+                  },
+                  {
+                    "type": "maxFileSize",
+                    "value": 10485760
+                  }
+                ]
+              },
+              {
+                "type": "boolean",
+                "key": "consent",
+                "label": "I confirm the information I have given is correct.",
+                "required": true,
+                "validators": [
+                  {
+                    "type": "equals",
+                    "value": true,
+                    "message": "You must confirm before submitting."
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "submit": {
+          "outcomes": [
+            {
+              "key": "needsGuarantor",
+              "when": {
+                "==": [
+                  {
+                    "var": "hasGuarantor"
+                  },
+                  "yes"
+                ]
+              },
+              "message": "Thank you. We will contact your guarantor next.",
+              "redirect": "/applications/guarantor"
+            },
+            {
+              "key": "standard",
+              "message": "Thank you. Your application has been received."
+            }
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "name": "duplicate field keys",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a"
+              },
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/1/key",
+          "code": "duplicateKey"
+        }
+      ]
+    },
+    {
+      "name": "a field key may not repeat a page key",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "page1",
+                "label": "page1"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/key",
+          "code": "duplicateKey"
+        }
+      ]
+    },
+    {
+      "name": "every repeated occurrence is reported",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a"
+              },
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a"
+              },
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/1/key",
+          "code": "duplicateKey"
+        },
+        {
+          "pointer": "/pages/0/elements/2/key",
+          "code": "duplicateKey"
+        }
+      ]
+    },
+    {
+      "name": "repeater children may reuse an outside key",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "street",
+                "label": "street"
+              },
+              {
+                "type": "repeater",
+                "key": "items",
+                "label": "Items",
+                "elements": [
+                  {
+                    "type": "text",
+                    "key": "street",
+                    "label": "street"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": []
+    },
+    {
+      "name": "repeater children are unique within the repeater",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "repeater",
+                "key": "items",
+                "label": "Items",
+                "elements": [
+                  {
+                    "type": "text",
+                    "key": "street",
+                    "label": "street"
+                  },
+                  {
+                    "type": "text",
+                    "key": "street",
+                    "label": "street"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/elements/1/key",
+          "code": "duplicateKey"
+        }
+      ]
+    },
+    {
+      "name": "duplicate outcome keys",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a"
+              }
+            ]
+          }
+        ],
+        "submit": {
+          "outcomes": [
+            {
+              "key": "done"
+            },
+            {
+              "key": "done"
+            }
+          ]
+        }
+      },
+      "expected": [
+        {
+          "pointer": "/submit/outcomes/1/key",
+          "code": "duplicateOutcomeKey"
+        }
+      ]
+    },
+    {
+      "name": "a computed var path",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a"
+              },
+              {
+                "type": "text",
+                "key": "b",
+                "label": "b",
+                "visible": {
+                  "var": {
+                    "cat": ["a"]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/1/visible",
+          "code": "varPath"
+        }
+      ]
+    },
+    {
+      "name": "a reference to a missing field",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a"
+              },
+              {
+                "type": "text",
+                "key": "b",
+                "label": "b",
+                "visible": {
+                  "==": [
+                    {
+                      "var": "missing"
+                    },
+                    1
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/1/visible/==/0",
+          "code": "unknownReference"
+        }
+      ]
+    },
+    {
+      "name": "$item outside a repeater",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a",
+                "visible": {
+                  "empty": {
+                    "var": "$item.x"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/visible/empty",
+          "code": "unknownReference"
+        }
+      ]
+    },
+    {
+      "name": "a repeater child cannot be referenced directly from outside",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "repeater",
+                "key": "items",
+                "label": "Items",
+                "elements": [
+                  {
+                    "type": "text",
+                    "key": "street",
+                    "label": "street"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "key": "b",
+                "label": "b",
+                "visible": {
+                  "empty": {
+                    "var": "street"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/1/visible/empty",
+          "code": "unknownReference"
+        }
+      ]
+    },
+    {
+      "name": "$item, $index and the repeater key are valid references",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "repeater",
+                "key": "items",
+                "label": "Items",
+                "elements": [
+                  {
+                    "type": "text",
+                    "key": "street",
+                    "label": "street"
+                  },
+                  {
+                    "type": "text",
+                    "key": "note",
+                    "label": "note",
+                    "visible": {
+                      "and": [
+                        {
+                          "!": {
+                            "empty": {
+                              "var": "$item.street"
+                            }
+                          }
+                        },
+                        {
+                          "==": [
+                            {
+                              "var": "$index"
+                            },
+                            0
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "hidden",
+                "key": "count",
+                "label": "Count",
+                "valueType": "number",
+                "calculate": {
+                  "length": [
+                    {
+                      "var": "items"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": []
+    },
+    {
+      "name": "$value outside an expression validator",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a",
+                "required": {
+                  "empty": {
+                    "var": "$value"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/required/empty",
+          "code": "unknownReference"
+        }
+      ]
+    },
+    {
+      "name": "$value and $this in their scopes are valid",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "checkboxes",
+                "key": "tags",
+                "label": "Tags",
+                "options": [
+                  {
+                    "value": "a",
+                    "label": "A"
+                  }
+                ],
+                "validators": [
+                  {
+                    "type": "expression",
+                    "message": "Only a",
+                    "rule": {
+                      "all": [
+                        {
+                          "var": "$value"
+                        },
+                        {
+                          "==": [
+                            {
+                              "var": "$this"
+                            },
+                            "a"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": []
+    },
+    {
+      "name": "$this outside an array operator",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a",
+                "visible": {
+                  "empty": {
+                    "var": "$this"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/visible/empty",
+          "code": "unknownReference"
+        }
+      ]
+    },
+    {
+      "name": "$this in the first argument of an array operator",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a",
+                "visible": {
+                  "some": [
+                    {
+                      "var": "$this"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/visible/some/0",
+          "code": "unknownReference"
+        }
+      ]
+    },
+    {
+      "name": "== with one argument",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a",
+                "visible": {
+                  "==": [1]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/visible",
+          "code": "arity"
+        }
+      ]
+    },
+    {
+      "name": "date.today with an argument",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "date",
+                "key": "d",
+                "label": "D",
+                "validators": [
+                  {
+                    "type": "minDate",
+                    "value": {
+                      "date.today": [1]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/validators/0/value",
+          "code": "arity"
+        }
+      ]
+    },
+    {
+      "name": "arity is checked in nested operations",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a",
+                "visible": {
+                  "and": [
+                    true,
+                    {
+                      "!": [1, 2]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/visible/and/1",
+          "code": "arity"
+        }
+      ]
+    },
+    {
+      "name": "the / operator is escaped as ~1 in pointers",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "hidden",
+                "key": "x",
+                "label": "X",
+                "valueType": "number",
+                "calculate": {
+                  "/": [
+                    {
+                      "==": [1]
+                    },
+                    2
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/calculate/~1/0",
+          "code": "arity"
+        }
+      ]
+    },
+    {
+      "name": "shorthand and three-argument forms are valid; self-referencing visibility is a cycle",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a",
+                "visible": {
+                  "!": {
+                    "empty": {
+                      "var": "a"
+                    }
+                  }
+                },
+                "required": {
+                  "<": [1, 2, 3]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0",
+          "code": "cycle"
+        }
+      ]
+    },
+    {
+      "name": "an invalid pattern validator",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a",
+                "validators": [
+                  {
+                    "type": "pattern",
+                    "value": "(?=a)"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/validators/0/value",
+          "code": "invalidPattern"
+        }
+      ]
+    },
+    {
+      "name": "an invalid literal matches pattern",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a"
+              },
+              {
+                "type": "text",
+                "key": "b",
+                "label": "b",
+                "visible": {
+                  "matches": [
+                    {
+                      "var": "a"
+                    },
+                    "a{2,1}"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/1/visible/matches/1",
+          "code": "invalidPattern"
+        }
+      ]
+    },
+    {
+      "name": "two fields whose visibility depends on each other",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a",
+                "visible": {
+                  "empty": {
+                    "var": "b"
+                  }
+                }
+              },
+              {
+                "type": "text",
+                "key": "b",
+                "label": "b",
+                "visible": {
+                  "empty": {
+                    "var": "a"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0",
+          "code": "cycle"
+        }
+      ]
+    },
+    {
+      "name": "a calculated field that references itself",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "hidden",
+                "key": "x",
+                "label": "X",
+                "valueType": "number",
+                "calculate": {
+                  "+": [
+                    {
+                      "var": "x"
+                    },
+                    1
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0",
+          "code": "cycle"
+        }
+      ]
+    },
+    {
+      "name": "a panel whose visibility depends on its own child",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "panel",
+                "key": "pn",
+                "visible": {
+                  "empty": {
+                    "var": "inner"
+                  }
+                },
+                "elements": [
+                  {
+                    "type": "text",
+                    "key": "inner",
+                    "label": "inner"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/elements/0",
+          "code": "cycle"
+        }
+      ]
+    },
+    {
+      "name": "required, validators and outcomes cannot create cycles",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a",
+                "required": {
+                  "==": [
+                    {
+                      "var": "a"
+                    },
+                    "x"
+                  ]
+                },
+                "validators": [
+                  {
+                    "type": "expression",
+                    "rule": {
+                      "!=": [
+                        {
+                          "var": "$value"
+                        },
+                        {
+                          "var": "b"
+                        }
+                      ]
+                    },
+                    "message": "Differs"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "key": "b",
+                "label": "b",
+                "required": {
+                  "empty": {
+                    "var": "a"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "submit": {
+          "outcomes": [
+            {
+              "key": "o",
+              "when": {
+                "==": [
+                  {
+                    "var": "a"
+                  },
+                  {
+                    "var": "b"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "name": "a number default value must be a number",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "number",
+                "key": "n",
+                "label": "N",
+                "defaultValue": "5"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/defaultValue",
+          "code": "valueType"
+        }
+      ]
+    },
+    {
+      "name": "an equals value must match the field type",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "boolean",
+                "key": "b",
+                "label": "B",
+                "validators": [
+                  {
+                    "type": "equals",
+                    "value": "true"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/validators/0/value",
+          "code": "valueType"
+        }
+      ]
+    },
+    {
+      "name": "a valid leap-day default",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "date",
+                "key": "d",
+                "label": "D",
+                "defaultValue": "2024-02-29"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": []
+    },
+    {
+      "name": "an impossible date default",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "date",
+                "key": "d",
+                "label": "D",
+                "defaultValue": "2023-02-29"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/defaultValue",
+          "code": "valueType"
+        }
+      ]
+    },
+    {
+      "name": "duplicate option values",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "radio",
+                "key": "r",
+                "label": "R",
+                "options": [
+                  {
+                    "value": "a",
+                    "label": "A"
+                  },
+                  {
+                    "value": "a",
+                    "label": "A again"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/options/1/value",
+          "code": "duplicateOption"
+        }
+      ]
+    },
+    {
+      "name": "requiredParts outside parts",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "name",
+                "key": "nm",
+                "label": "Name",
+                "parts": ["given", "family"],
+                "requiredParts": ["middle"]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/requiredParts",
+          "code": "requiredParts"
+        }
+      ]
+    },
+    {
+      "name": "validators on the wrong value type",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "number",
+                "key": "n",
+                "label": "N",
+                "validators": [
+                  {
+                    "type": "minLength",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "key": "t",
+                "label": "t",
+                "validators": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "minItems",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "type": "checkboxes",
+                "key": "c",
+                "label": "C",
+                "options": [
+                  {
+                    "value": "a",
+                    "label": "A"
+                  }
+                ],
+                "validators": [
+                  {
+                    "type": "maxFileSize",
+                    "value": 10
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/validators/0",
+          "code": "validatorType"
+        },
+        {
+          "pointer": "/pages/0/elements/1/validators/0",
+          "code": "validatorType"
+        },
+        {
+          "pointer": "/pages/0/elements/1/validators/1",
+          "code": "validatorType"
+        },
+        {
+          "pointer": "/pages/0/elements/2/validators/0",
+          "code": "validatorType"
+        }
+      ]
+    },
+    {
+      "name": "validators follow a hidden field's valueType",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "hidden",
+                "key": "h",
+                "label": "H",
+                "valueType": "date",
+                "validators": [
+                  {
+                    "type": "minDate",
+                    "value": "2020-01-01"
+                  }
+                ]
+              },
+              {
+                "type": "email",
+                "key": "e",
+                "label": "E",
+                "validators": [
+                  {
+                    "type": "pattern",
+                    "value": "[a-z@.]+"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": []
+    },
+    {
+      "name": "several problems are all reported",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a"
+              },
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a",
+                "visible": {
+                  "==": [
+                    {
+                      "var": "nope"
+                    },
+                    1
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/1/key",
+          "code": "duplicateKey"
+        },
+        {
+          "pointer": "/pages/0/elements/1/visible/==/0",
+          "code": "unknownReference"
+        }
+      ]
+    }
+  ]
+}
