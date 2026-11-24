@@ -183,6 +183,32 @@
         ]
       },
       "expected": 1850.5
+    },
+    {
+      "name": "some of a number is false",
+      "expression": {
+        "some": [5, true]
+      },
+      "expected": false
+    },
+    {
+      "name": "none of a number is true",
+      "expression": {
+        "none": [5, true]
+      },
+      "expected": true
+    },
+    {
+      "name": "map of a string is null",
+      "expression": {
+        "map": [
+          "abc",
+          {
+            "var": "$this"
+          }
+        ]
+      },
+      "expected": null
     }
   ]
 }
