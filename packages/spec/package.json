@@ -1,0 +1,37 @@
+{
+  "name": "@formkiln/spec",
+  "version": "0.0.0",
+  "description": "Formkiln form schema definition, operator catalogue and conformance test cases.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liuyfly/formkiln.git",
+    "directory": "packages/spec"
+  },
+  "homepage": "https://github.com/liuyfly/formkiln#readme",
+  "bugs": "https://github.com/liuyfly/formkiln/issues",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./conformance/*": "./conformance/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "conformance"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "test": "vitest run",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

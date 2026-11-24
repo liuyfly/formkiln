@@ -1,0 +1,38 @@
+{
+  "name": "@formkiln/core",
+  "version": "0.0.0",
+  "description": "Framework-agnostic Formkiln engine: expressions, validation and runtime state.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liuyfly/formkiln.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/liuyfly/formkiln#readme",
+  "bugs": "https://github.com/liuyfly/formkiln/issues",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "test": "vitest run",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@formkiln/spec": "workspace:*"
+  }
+}

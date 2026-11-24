@@ -1,0 +1,45 @@
+{
+  "name": "@formkiln/react",
+  "version": "0.0.0",
+  "description": "React renderer for Formkiln forms.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liuyfly/formkiln.git",
+    "directory": "packages/react"
+  },
+  "homepage": "https://github.com/liuyfly/formkiln#readme",
+  "bugs": "https://github.com/liuyfly/formkiln/issues",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup src/index.tsx --format esm --dts --clean --external react",
+    "test": "vitest run",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@formkiln/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "react": "^19.3.1"
+  }
+}
