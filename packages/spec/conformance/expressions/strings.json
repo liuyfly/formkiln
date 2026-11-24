@@ -1,0 +1,103 @@
+{
+  "description": "String operators and portable regular expressions.",
+  "cases": [
+    {
+      "name": "cat with numbers and null",
+      "expression": {
+        "cat": ["a", 1, null, "b"]
+      },
+      "expected": "a1b"
+    },
+    {
+      "name": "cat formats 1.0 as 1",
+      "expression": {
+        "cat": ["x", 1.0]
+      },
+      "expected": "x1"
+    },
+    {
+      "name": "cat formats 0.1",
+      "expression": {
+        "cat": ["x", 0.1]
+      },
+      "expected": "x0.1"
+    },
+    {
+      "name": "cat with boolean gives null",
+      "expression": {
+        "cat": ["x", true]
+      },
+      "expected": null
+    },
+    {
+      "name": "length counts code points",
+      "expression": {
+        "length": ["héllo"]
+      },
+      "expected": 5
+    },
+    {
+      "name": "length counts an emoji as one",
+      "expression": {
+        "length": ["😀"]
+      },
+      "expected": 1
+    },
+    {
+      "name": "length of null is 0",
+      "expression": {
+        "length": [null]
+      },
+      "expected": 0
+    },
+    {
+      "name": "length of array",
+      "expression": {
+        "length": [[1, 2, 3]]
+      },
+      "expected": 3
+    },
+    {
+      "name": "lower",
+      "expression": {
+        "lower": ["ÀB"]
+      },
+      "expected": "àb"
+    },
+    {
+      "name": "upper is locale independent",
+      "expression": {
+        "upper": ["istanbul"]
+      },
+      "expected": "ISTANBUL"
+    },
+    {
+      "name": "matches is a full match",
+      "expression": {
+        "matches": ["12-34-56", "\\d{2}-?\\d{2}-?\\d{2}"]
+      },
+      "expected": true
+    },
+    {
+      "name": "matches rejects partial matches",
+      "expression": {
+        "matches": ["123456x", "\\d{6}"]
+      },
+      "expected": false
+    },
+    {
+      "name": "matches on null is false",
+      "expression": {
+        "matches": [null, "\\d"]
+      },
+      "expected": false
+    },
+    {
+      "name": "\\d is ASCII only",
+      "expression": {
+        "matches": ["٣", "\\d"]
+      },
+      "expected": false
+    }
+  ]
+}

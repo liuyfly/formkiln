@@ -1,0 +1,68 @@
+{
+  "description": "The empty operator.",
+  "cases": [
+    {
+      "name": "null is empty",
+      "expression": {
+        "empty": [null]
+      },
+      "expected": true
+    },
+    {
+      "name": "empty string is empty",
+      "expression": {
+        "empty": [""]
+      },
+      "expected": true
+    },
+    {
+      "name": "empty array is empty",
+      "expression": {
+        "empty": [
+          {
+            "var": "a"
+          }
+        ]
+      },
+      "data": {
+        "a": []
+      },
+      "expected": true
+    },
+    {
+      "name": "empty object is empty",
+      "expression": {
+        "empty": [
+          {
+            "var": "o"
+          }
+        ]
+      },
+      "data": {
+        "o": {}
+      },
+      "expected": true
+    },
+    {
+      "name": "zero is not empty",
+      "expression": {
+        "empty": [0]
+      },
+      "expected": false
+    },
+    {
+      "name": "false is not empty",
+      "expression": {
+        "empty": [false]
+      },
+      "expected": false
+    },
+    {
+      "name": "whitespace is not empty",
+      "expression": {
+        "empty": [" "]
+      },
+      "expected": false
+    }
+  ]
+}

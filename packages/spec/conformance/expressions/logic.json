@@ -1,0 +1,75 @@
+{
+  "description": "Boolean logic without truthiness.",
+  "cases": [
+    {
+      "name": "and: all true",
+      "expression": {
+        "and": [true, true]
+      },
+      "expected": true
+    },
+    {
+      "name": "and: non-boolean operand is not true",
+      "expression": {
+        "and": [true, 1]
+      },
+      "expected": false
+    },
+    {
+      "name": "or: one true",
+      "expression": {
+        "or": [null, true]
+      },
+      "expected": true
+    },
+    {
+      "name": "or: truthy-looking values are not true",
+      "expression": {
+        "or": [false, null, "yes", 1]
+      },
+      "expected": false
+    },
+    {
+      "name": "not null is true",
+      "expression": {
+        "!": [null]
+      },
+      "expected": true
+    },
+    {
+      "name": "not true is false",
+      "expression": {
+        "!": [true]
+      },
+      "expected": false
+    },
+    {
+      "name": "not 0 is true",
+      "expression": {
+        "!": [0]
+      },
+      "expected": true
+    },
+    {
+      "name": "if: else-if chain",
+      "expression": {
+        "if": [false, "a", true, "b", "c"]
+      },
+      "expected": "b"
+    },
+    {
+      "name": "if: missing else is null",
+      "expression": {
+        "if": [false, "a"]
+      },
+      "expected": null
+    },
+    {
+      "name": "if: 1 is not a true condition",
+      "expression": {
+        "if": [1, "a", "b"]
+      },
+      "expected": "b"
+    }
+  ]
+}
