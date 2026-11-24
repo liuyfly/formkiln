@@ -235,28 +235,54 @@ export interface FileRef {
   contentType: string;
 }
 
-/** Error codes reported by validation (docs/form-schema-v1.md §9 and §11). */
-export type ErrorCode =
-  | "required"
-  | "type"
-  | "option"
-  | "format.email"
-  | "format.phone"
-  | "format.url"
-  | "minLength"
-  | "maxLength"
-  | "pattern"
-  | "min"
-  | "max"
-  | "integer"
-  | "minDate"
-  | "maxDate"
-  | "minItems"
-  | "maxItems"
-  | "maxFileSize"
-  | "fileType"
-  | "equals"
-  | "expression";
+/** Error codes reported when validating answers (docs/form-schema-v1.md §11). */
+export const ERROR_CODES = [
+  "required",
+  "type",
+  "option",
+  "format.email",
+  "format.phone",
+  "format.url",
+  "minLength",
+  "maxLength",
+  "pattern",
+  "min",
+  "max",
+  "integer",
+  "minDate",
+  "maxDate",
+  "minItems",
+  "maxItems",
+  "maxFileSize",
+  "fileType",
+  "equals",
+  "expression",
+] as const;
+
+export type ErrorCode = (typeof ERROR_CODES)[number];
+
+/** Error codes reported when validating a form document (docs/form-schema-v1.md §10). */
+export const DEFINITION_ERROR_CODES = [
+  "duplicateKey",
+  "duplicateOutcomeKey",
+  "varPath",
+  "unknownReference",
+  "arity",
+  "invalidPattern",
+  "cycle",
+  "valueType",
+  "duplicateOption",
+  "requiredParts",
+  "validatorType",
+] as const;
+
+export type DefinitionErrorCode = (typeof DEFINITION_ERROR_CODES)[number];
+
+/** A static error in a form document, located by a JSON Pointer (RFC 6901). */
+export interface DefinitionError {
+  pointer: string;
+  code: DefinitionErrorCode;
+}
 
 export interface ValidationError {
   path: string;
@@ -268,4 +294,8 @@ export interface ValidationError {
 export interface ValidationResult {
   valid: boolean;
   errors: ValidationError[];
+  /** Key of the selected outcome, or null (docs/form-schema-v1.md §8). */
+  outcome: string | null;
+  /** Data to store: active, non-null values (docs/form-schema-v1.md §7.3). */
+  submission: Record<string, JsonValue>;
 }

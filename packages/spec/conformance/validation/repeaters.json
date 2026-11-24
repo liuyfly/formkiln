@@ -1,0 +1,258 @@
+{
+  "description": "Repeaters: item paths, $item and $index, minItems and maxItems (§5.3, §9).",
+  "forms": {
+    "rep": {
+      "schemaVersion": 1,
+      "key": "rep",
+      "title": "rep",
+      "pages": [
+        {
+          "key": "page1",
+          "elements": [
+            {
+              "type": "repeater",
+              "key": "addresses",
+              "label": "Addresses",
+              "minItems": 1,
+              "maxItems": 2,
+              "elements": [
+                {
+                  "type": "text",
+                  "key": "street",
+                  "label": "Street",
+                  "required": true
+                },
+                {
+                  "type": "date",
+                  "key": "from",
+                  "label": "From",
+                  "required": true
+                },
+                {
+                  "type": "date",
+                  "key": "to",
+                  "label": "To",
+                  "validators": [
+                    {
+                      "type": "expression",
+                      "rule": {
+                        ">=": [
+                          {
+                            "date.diff": [
+                              {
+                                "var": "$item.from"
+                              },
+                              {
+                                "var": "$value"
+                              },
+                              "day"
+                            ]
+                          },
+                          0
+                        ]
+                      },
+                      "message": "End before start"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "key": "note",
+                  "label": "Note",
+                  "visible": {
+                    "==": [
+                      {
+                        "var": "$index"
+                      },
+                      0
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "type": "hidden",
+              "key": "count",
+              "label": "Count",
+              "valueType": "number",
+              "calculate": {
+                "length": [
+                  {
+                    "var": "addresses"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "name": "an empty repeater violates minItems",
+      "form": "rep",
+      "answers": {},
+      "expected": {
+        "errors": [
+          {
+            "path": "addresses",
+            "code": "minItems",
+            "params": {
+              "value": 1
+            }
+          }
+        ],
+        "submission": {
+          "count": 0
+        }
+      }
+    },
+    {
+      "name": "item errors use indexed paths",
+      "form": "rep",
+      "answers": {
+        "addresses": [
+          {
+            "street": "",
+            "from": "2020-01-01",
+            "to": "2019-12-31"
+          }
+        ]
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "addresses.0.street",
+            "code": "required"
+          },
+          {
+            "path": "addresses.0.to",
+            "code": "expression",
+            "message": "End before start"
+          }
+        ],
+        "inactive": [],
+        "submission": {
+          "addresses": [
+            {
+              "from": "2020-01-01",
+              "to": "2019-12-31"
+            }
+          ],
+          "count": 1
+        }
+      }
+    },
+    {
+      "name": "$index controls child visibility",
+      "form": "rep",
+      "answers": {
+        "addresses": [
+          {
+            "street": "A",
+            "from": "2020-01-01",
+            "note": "n1"
+          },
+          {
+            "street": "B",
+            "from": "2021-01-01",
+            "note": "n2"
+          }
+        ]
+      },
+      "expected": {
+        "errors": [],
+        "inactive": ["addresses.1.note"],
+        "submission": {
+          "addresses": [
+            {
+              "street": "A",
+              "from": "2020-01-01",
+              "note": "n1"
+            },
+            {
+              "street": "B",
+              "from": "2021-01-01"
+            }
+          ],
+          "count": 2
+        }
+      }
+    },
+    {
+      "name": "too many items",
+      "form": "rep",
+      "answers": {
+        "addresses": [
+          {
+            "street": "A",
+            "from": "2020-01-01"
+          },
+          {
+            "street": "B",
+            "from": "2021-01-01"
+          },
+          {
+            "street": "C",
+            "from": "2022-01-01"
+          }
+        ]
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "addresses",
+            "code": "maxItems",
+            "params": {
+              "value": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "a repeater value must be an array of objects",
+      "form": "rep",
+      "answers": {
+        "addresses": ["x"]
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "addresses",
+            "code": "type"
+          }
+        ],
+        "submission": {
+          "count": 0
+        }
+      }
+    },
+    {
+      "name": "unknown child keys are ignored",
+      "form": "rep",
+      "answers": {
+        "addresses": [
+          {
+            "street": "A",
+            "from": "2020-01-01",
+            "extra": 1
+          }
+        ]
+      },
+      "expected": {
+        "errors": [],
+        "submission": {
+          "addresses": [
+            {
+              "street": "A",
+              "from": "2020-01-01"
+            }
+          ],
+          "count": 1
+        }
+      }
+    }
+  ]
+}
