@@ -26,7 +26,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # Opens a "Version Packages" PR when changesets exist; publishes to npm when that PR is merged.
       # No npm token is stored: publishing relies on trusted publishing configured per package on npmjs.com.
-      - uses: changesets/action@v1
+      - uses: changesets/action@v2
         with:
           version: pnpm version-packages
           publish: pnpm release
