@@ -1,5 +1,16 @@
 # @formkiln/core
 
+## 0.2.0
+
+### Minor Changes
+
+- 9646f9d: Add `validateDefinition` (static validity, Form Schema §10) and `validateAnswers` (normalisation, type checking, visibility, calculated fields, validation, outcome and submission, §11). Both pass every validation and definition conformance case of `@formkiln/spec`.
+
+### Patch Changes
+
+- Updated dependencies [942280e]
+  - @formkiln/spec@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes
