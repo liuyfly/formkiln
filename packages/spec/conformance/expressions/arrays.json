@@ -1,0 +1,188 @@
+{
+  "description": "Membership, quantifiers and array transforms.",
+  "cases": [
+    {
+      "name": "in array",
+      "expression": {
+        "in": ["b", ["a", "b"]]
+      },
+      "expected": true
+    },
+    {
+      "name": "in array is strict",
+      "expression": {
+        "in": [1, ["1"]]
+      },
+      "expected": false
+    },
+    {
+      "name": "in string is substring",
+      "expression": {
+        "in": ["ell", "hello"]
+      },
+      "expected": true
+    },
+    {
+      "name": "in null is false",
+      "expression": {
+        "in": ["a", null]
+      },
+      "expected": false
+    },
+    {
+      "name": "some",
+      "expression": {
+        "some": [
+          [1, 2, 3],
+          {
+            ">": [
+              {
+                "var": "$this"
+              },
+              2
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "some of empty array is false",
+      "expression": {
+        "some": [[], true]
+      },
+      "expected": false
+    },
+    {
+      "name": "all of empty array is true",
+      "expression": {
+        "all": [
+          [],
+          {
+            ">": [
+              {
+                "var": "$this"
+              },
+              2
+            ]
+          }
+        ]
+      },
+      "expected": true
+    },
+    {
+      "name": "all of null is false",
+      "expression": {
+        "all": [null, true]
+      },
+      "expected": false
+    },
+    {
+      "name": "none of null is true",
+      "expression": {
+        "none": [null, true]
+      },
+      "expected": true
+    },
+    {
+      "name": "map",
+      "expression": {
+        "map": [
+          [1, 2],
+          {
+            "*": [
+              {
+                "var": "$this"
+              },
+              10
+            ]
+          }
+        ]
+      },
+      "expected": [10, 20]
+    },
+    {
+      "name": "map with index",
+      "expression": {
+        "map": [
+          [5, 6],
+          {
+            "var": "$thisIndex"
+          }
+        ]
+      },
+      "expected": [0, 1]
+    },
+    {
+      "name": "filter",
+      "expression": {
+        "filter": [
+          [1, 2, 3, 4],
+          {
+            "==": [
+              {
+                "%": [
+                  {
+                    "var": "$this"
+                  },
+                  2
+                ]
+              },
+              0
+            ]
+          }
+        ]
+      },
+      "expected": [2, 4]
+    },
+    {
+      "name": "sum",
+      "expression": {
+        "sum": [[1, 2, 3.5]]
+      },
+      "expected": 6.5
+    },
+    {
+      "name": "sum of empty array is 0",
+      "expression": {
+        "sum": [[]]
+      },
+      "expected": 0
+    },
+    {
+      "name": "sum with null element gives null",
+      "expression": {
+        "sum": [[1, null]]
+      },
+      "expected": null
+    },
+    {
+      "name": "sum over repeater items",
+      "expression": {
+        "sum": [
+          {
+            "map": [
+              {
+                "var": "properties"
+              },
+              {
+                "var": "$this.monthlyRent"
+              }
+            ]
+          }
+        ]
+      },
+      "data": {
+        "properties": [
+          {
+            "monthlyRent": 1000
+          },
+          {
+            "monthlyRent": 850.5
+          }
+        ]
+      },
+      "expected": 1850.5
+    }
+  ]
+}

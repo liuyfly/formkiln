@@ -17,12 +17,17 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./schema/*": "./schema/*",
     "./conformance/*": "./conformance/*",
+    "./examples/*": "./examples/*",
     "./package.json": "./package.json"
   },
   "files": [
     "dist",
-    "conformance"
+    "schema",
+    "conformance",
+    "examples",
+    "docs"
   ],
   "publishConfig": {
     "access": "public",
@@ -33,5 +38,8 @@
     "test": "vitest run",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0"
   }
 }

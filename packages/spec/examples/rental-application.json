@@ -1,0 +1,267 @@
+{
+  "$schema": "../schema/form-v1.schema.json",
+  "schemaVersion": 1,
+  "key": "rentalApplication",
+  "title": { "en": "Rental application", "zh-CN": "租房申请" },
+  "description": "A fictional example that exercises most of Form Schema v1.",
+  "settings": {
+    "navigation": "paged",
+    "timeZone": "Europe/London",
+    "defaultLocale": "en",
+    "locales": ["en", "zh-CN"],
+    "inactiveValues": "retain"
+  },
+  "pages": [
+    {
+      "key": "applicantPage",
+      "title": "About you",
+      "elements": [
+        {
+          "type": "content",
+          "key": "intro",
+          "format": "markdown",
+          "text": "It takes about **10 minutes**. You can save and continue later."
+        },
+        {
+          "type": "name",
+          "key": "applicantName",
+          "label": "Full name",
+          "parts": ["title", "given", "family"],
+          "required": true
+        },
+        {
+          "type": "email",
+          "key": "email",
+          "label": "Email",
+          "required": true,
+          "autocomplete": "email"
+        },
+        {
+          "type": "phone",
+          "key": "phone",
+          "label": "Mobile number",
+          "required": true,
+          "autocomplete": "tel"
+        },
+        {
+          "type": "date",
+          "key": "dateOfBirth",
+          "label": "Date of birth",
+          "required": true,
+          "sensitive": true,
+          "validators": [
+            {
+              "type": "expression",
+              "rule": {
+                ">=": [{ "date.diff": [{ "var": "$value" }, { "date.today": [] }, "year"] }, 18]
+              },
+              "message": {
+                "en": "You must be at least 18 years old.",
+                "zh-CN": "申请人须年满 18 岁。"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "homePage",
+      "title": "Where you live",
+      "elements": [
+        {
+          "type": "address",
+          "key": "currentAddress",
+          "label": "Current address",
+          "required": true
+        },
+        {
+          "type": "date",
+          "key": "movedIn",
+          "label": "When did you move in?",
+          "required": true,
+          "validators": [{ "type": "maxDate", "value": { "date.today": [] } }]
+        },
+        {
+          "type": "repeater",
+          "key": "previousAddresses",
+          "label": "Previous addresses in the last 3 years",
+          "itemLabel": "Previous address",
+          "visible": {
+            "<": [{ "date.diff": [{ "var": "movedIn" }, { "date.today": [] }, "year"] }, 3]
+          },
+          "minItems": 1,
+          "maxItems": 5,
+          "elements": [
+            { "type": "address", "key": "address", "label": "Address", "required": true },
+            { "type": "date", "key": "from", "label": "From", "required": true },
+            {
+              "type": "date",
+              "key": "to",
+              "label": "To",
+              "required": true,
+              "validators": [
+                {
+                  "type": "expression",
+                  "rule": {
+                    ">=": [
+                      { "date.diff": [{ "var": "$item.from" }, { "var": "$value" }, "day"] },
+                      0
+                    ]
+                  },
+                  "message": "The end date must be after the start date."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "incomePage",
+      "title": "Income",
+      "elements": [
+        {
+          "type": "radio",
+          "key": "employmentStatus",
+          "label": "Employment status",
+          "required": true,
+          "options": [
+            { "value": "employed", "label": "Employed" },
+            { "value": "selfEmployed", "label": "Self-employed" },
+            { "value": "student", "label": "Student" },
+            { "value": "other", "label": "Other" }
+          ]
+        },
+        {
+          "type": "panel",
+          "key": "employmentPanel",
+          "title": "Employment details",
+          "visible": { "in": [{ "var": "employmentStatus" }, ["employed", "selfEmployed"]] },
+          "elements": [
+            {
+              "type": "text",
+              "key": "employerName",
+              "label": "Employer or business name",
+              "required": true
+            },
+            {
+              "type": "number",
+              "key": "annualIncome",
+              "label": "Annual income before tax",
+              "prefix": "£",
+              "required": true,
+              "validators": [{ "type": "min", "value": 0 }, { "type": "integer" }]
+            }
+          ]
+        },
+        {
+          "type": "number",
+          "key": "monthlyRent",
+          "label": "Monthly rent of the property",
+          "prefix": "£",
+          "required": true,
+          "validators": [{ "type": "min", "value": 1 }]
+        },
+        {
+          "type": "hidden",
+          "key": "rentToIncomeRatio",
+          "label": "Rent-to-income ratio",
+          "valueType": "number",
+          "calculate": {
+            "if": [
+              { "!": { "empty": { "var": "annualIncome" } } },
+              {
+                "round": [
+                  { "/": [{ "*": [{ "var": "monthlyRent" }, 12] }, { "var": "annualIncome" }] },
+                  2
+                ]
+              },
+              null
+            ]
+          }
+        },
+        {
+          "type": "radio",
+          "key": "hasGuarantor",
+          "label": "Do you have a guarantor?",
+          "required": { "!": { "<=": [{ "var": "rentToIncomeRatio" }, 0.4] } },
+          "description": "Required when the yearly rent is more than 40% of your income, or no income is declared.",
+          "options": [
+            { "value": "yes", "label": "Yes" },
+            { "value": "no", "label": "No" }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "bankPage",
+      "title": "Bank details",
+      "elements": [
+        {
+          "type": "text",
+          "key": "sortCode",
+          "label": "Sort code",
+          "placeholder": "12-34-56",
+          "required": true,
+          "sensitive": true,
+          "validators": [
+            {
+              "type": "pattern",
+              "value": "\\d{2}-?\\d{2}-?\\d{2}",
+              "message": "Enter a 6-digit sort code, like 12-34-56."
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "key": "accountNumber",
+          "label": "Account number",
+          "required": true,
+          "sensitive": true,
+          "validators": [
+            {
+              "type": "pattern",
+              "value": "\\d{8}",
+              "message": "Enter an 8-digit account number."
+            }
+          ]
+        },
+        {
+          "type": "file",
+          "key": "payslips",
+          "label": "Recent payslips",
+          "multiple": true,
+          "accept": ["application/pdf", "image/jpeg", "image/png"],
+          "visible": { "==": [{ "var": "employmentStatus" }, "employed"] },
+          "validators": [
+            { "type": "maxItems", "value": 3 },
+            { "type": "maxFileSize", "value": 10485760 }
+          ]
+        },
+        {
+          "type": "boolean",
+          "key": "consent",
+          "label": "I confirm the information I have given is correct.",
+          "required": true,
+          "validators": [
+            { "type": "equals", "value": true, "message": "You must confirm before submitting." }
+          ]
+        }
+      ]
+    }
+  ],
+  "submit": {
+    "outcomes": [
+      {
+        "key": "needsGuarantor",
+        "when": { "==": [{ "var": "hasGuarantor" }, "yes"] },
+        "message": "Thank you. We will contact your guarantor next.",
+        "redirect": "/applications/guarantor"
+      },
+      {
+        "key": "standard",
+        "message": "Thank you. Your application has been received."
+      }
+    ]
+  }
+}

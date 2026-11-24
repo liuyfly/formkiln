@@ -1,0 +1,147 @@
+{
+  "description": "Calendar dates are YYYY-MM-DD strings.",
+  "cases": [
+    {
+      "name": "today in Europe/London",
+      "expression": {
+        "date.today": []
+      },
+      "now": "2026-11-24T23:30:00Z",
+      "timeZone": "Europe/London",
+      "expected": "2026-11-24"
+    },
+    {
+      "name": "today in Asia/Shanghai",
+      "expression": {
+        "date.today": []
+      },
+      "now": "2026-11-24T23:30:00Z",
+      "timeZone": "Asia/Shanghai",
+      "expected": "2026-11-25"
+    },
+    {
+      "name": "today defaults to UTC",
+      "expression": {
+        "date.today": []
+      },
+      "now": "2026-11-24T23:30:00Z",
+      "expected": "2026-11-24"
+    },
+    {
+      "name": "add month clamps to month end",
+      "expression": {
+        "date.add": ["2025-01-31", 1, "month"]
+      },
+      "expected": "2025-02-28"
+    },
+    {
+      "name": "add month into a leap February",
+      "expression": {
+        "date.add": ["2024-01-31", 1, "month"]
+      },
+      "expected": "2024-02-29"
+    },
+    {
+      "name": "add year from 29 February",
+      "expression": {
+        "date.add": ["2024-02-29", 1, "year"]
+      },
+      "expected": "2025-02-28"
+    },
+    {
+      "name": "subtract a week",
+      "expression": {
+        "date.add": ["2026-11-24", -1, "week"]
+      },
+      "expected": "2026-11-17"
+    },
+    {
+      "name": "invalid date gives null",
+      "expression": {
+        "date.add": ["2026-02-30", 1, "day"]
+      },
+      "expected": null
+    },
+    {
+      "name": "datetime is not a date",
+      "expression": {
+        "date.add": ["2026-11-24T00:00:00Z", 1, "day"]
+      },
+      "expected": null
+    },
+    {
+      "name": "complete years: one day short",
+      "expression": {
+        "date.diff": ["2000-02-29", "2001-02-28", "year"]
+      },
+      "expected": 0
+    },
+    {
+      "name": "complete years after 29 February",
+      "expression": {
+        "date.diff": ["2000-02-29", "2001-03-01", "year"]
+      },
+      "expected": 1
+    },
+    {
+      "name": "age one day before 18th birthday",
+      "expression": {
+        "date.diff": ["2008-11-25", "2026-11-24", "year"]
+      },
+      "expected": 17
+    },
+    {
+      "name": "age on 18th birthday",
+      "expression": {
+        "date.diff": ["2008-11-24", "2026-11-24", "year"]
+      },
+      "expected": 18
+    },
+    {
+      "name": "complete months across a short month",
+      "expression": {
+        "date.diff": ["2026-01-31", "2026-02-28", "month"]
+      },
+      "expected": 0
+    },
+    {
+      "name": "negative day difference",
+      "expression": {
+        "date.diff": ["2026-11-24", "2026-11-17", "day"]
+      },
+      "expected": -7
+    },
+    {
+      "name": "negative week difference",
+      "expression": {
+        "date.diff": ["2026-11-24", "2026-11-10", "week"]
+      },
+      "expected": -2
+    },
+    {
+      "name": "adult check, one day short",
+      "expression": {
+        ">=": [
+          {
+            "date.diff": [
+              {
+                "var": "$value"
+              },
+              {
+                "date.today": []
+              },
+              "year"
+            ]
+          },
+          18
+        ]
+      },
+      "scope": {
+        "$value": "2008-11-25"
+      },
+      "now": "2026-11-24T12:00:00Z",
+      "timeZone": "Europe/London",
+      "expected": false
+    }
+  ]
+}

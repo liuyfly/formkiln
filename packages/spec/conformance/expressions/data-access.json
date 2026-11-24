@@ -1,0 +1,79 @@
+{
+  "description": "Resolving values with var.",
+  "cases": [
+    {
+      "name": "nested path",
+      "expression": {
+        "var": "a.b"
+      },
+      "data": {
+        "a": {
+          "b": 2
+        }
+      },
+      "expected": 2
+    },
+    {
+      "name": "array index segment",
+      "expression": {
+        "var": "list.1"
+      },
+      "data": {
+        "list": [10, 20]
+      },
+      "expected": 20
+    },
+    {
+      "name": "missing path returns default",
+      "expression": {
+        "var": ["missing", "d"]
+      },
+      "data": {},
+      "expected": "d"
+    },
+    {
+      "name": "null value returns default",
+      "expression": {
+        "var": ["a", 5]
+      },
+      "data": {
+        "a": null
+      },
+      "expected": 5
+    },
+    {
+      "name": "missing path without default is null",
+      "expression": {
+        "var": "a.b.c"
+      },
+      "data": {
+        "a": {
+          "b": 1
+        }
+      },
+      "expected": null
+    },
+    {
+      "name": "$item resolves to the current repeater item",
+      "expression": {
+        "var": "$item.x"
+      },
+      "scope": {
+        "$item": {
+          "x": 1
+        }
+      },
+      "expected": 1
+    },
+    {
+      "name": "$value resolves to the validated value",
+      "expression": {
+        "var": "$value"
+      },
+      "scope": {
+        "$value": "v"
+      },
+      "expected": "v"
+    }
+  ]
+}
