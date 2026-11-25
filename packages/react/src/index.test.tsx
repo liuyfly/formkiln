@@ -3,7 +3,7 @@ import type { FormDocument } from "@formkiln/spec";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { KilnForm, type FieldProps } from "./index";
+import { KilnForm, SubmitError, type FieldProps } from "./index";
 
 afterEach(cleanup);
 
@@ -129,6 +129,34 @@ describe("<KilnForm />", () => {
     await user.click(await screen.findByRole("button", { name: "Submit" }));
     expect((await screen.findByRole("alert")).textContent).toContain("could not be sent");
     expect(screen.getByRole("button", { name: "Submit" })).toBeTruthy();
+  });
+
+  it("shows the message of a SubmitError", async () => {
+    const user = userEvent.setup();
+    render(
+      <KilnForm
+        form={form}
+        initialAnswers={{ name: "Ada", status: "student", rent: 900, consent: true }}
+        onSubmit={() => Promise.reject(new SubmitError("Verification failed."))}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.click(await screen.findByRole("button", { name: "Submit" }));
+    expect((await screen.findByRole("alert")).textContent).toBe("Verification failed.");
+  });
+
+  it("renders beforeSubmit on the last page only", async () => {
+    const user = userEvent.setup();
+    render(
+      <KilnForm
+        form={form}
+        initialAnswers={{ name: "Ada", status: "student" }}
+        beforeSubmit={<p>verify</p>}
+      />,
+    );
+    expect(screen.queryByText("verify")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("verify")).toBeTruthy();
   });
 
   it("uses the locale for form texts and interface strings", async () => {
