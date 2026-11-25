@@ -57,6 +57,11 @@ export const CompositeField: FieldComponent = (props) => {
   return (
     <fieldset
       className="fk-field fk-composite"
+      onBlur={(event) => {
+        // The field counts as visited only when focus leaves all of its parts, so moving
+        // from Title to First name does not reveal errors for parts not reached yet.
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) props.onBlur();
+      }}
       data-invalid={props.isInvalid || undefined}
       {...(describedBy && { "aria-describedby": describedBy })}
     >
@@ -79,7 +84,6 @@ export const CompositeField: FieldComponent = (props) => {
               className="fk-field fk-part"
               value={typeof value[part] === "string" ? (value[part] as string) : ""}
               onChange={(text) => props.onChange({ ...value, [part]: text })}
-              onBlur={props.onBlur}
               isInvalid={errors.length > 0 || fieldErrors.length > 0}
               isRequired={props.isRequired && requiredParts.includes(part)}
               isReadOnly={props.isReadOnly}

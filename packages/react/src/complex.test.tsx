@@ -35,6 +35,33 @@ describe("composite fields", () => {
     });
   });
 
+  it("reveals part errors only when focus leaves the whole field", async () => {
+    const user = userEvent.setup();
+    render(
+      <KilnForm
+        form={page([
+          {
+            type: "name",
+            key: "fullName",
+            label: "Full name",
+            parts: ["title", "given", "family"],
+            required: true,
+          },
+          { type: "text", key: "email", label: "Email" },
+        ])}
+      />,
+    );
+    await user.type(screen.getByRole("textbox", { name: "Title" }), "CEO");
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "First name" }));
+    expect(screen.queryByText("This field is required")).toBeNull();
+
+    await user.tab();
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: /Email/ }));
+    expect(screen.getAllByText("This field is required")).toHaveLength(2);
+  });
+
   it("shows a member error next to the member input", async () => {
     const user = userEvent.setup();
     render(<KilnForm form={form} />);
