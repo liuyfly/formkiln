@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "key": "e2eContact",
+  "title": "Contact us",
+  "pages": [
+    {
+      "key": "main",
+      "elements": [
+        {
+          "type": "text",
+          "key": "name",
+          "label": "Your name",
+          "required": true,
+          "autocomplete": "name"
+        },
+        {
+          "type": "email",
+          "key": "email",
+          "label": "Email",
+          "required": true,
+          "autocomplete": "email"
+        },
+        {
+          "type": "select",
+          "key": "topic",
+          "label": "Topic",
+          "required": true,
+          "options": [
+            { "value": "sales", "label": "Sales" },
+            { "value": "support", "label": "Support" }
+          ]
+        },
+        {
+          "type": "text",
+          "key": "orderNumber",
+          "label": "Order number",
+          "visible": { "==": [{ "var": "topic" }, "support"] }
+        },
+        { "type": "textarea", "key": "message", "label": "Message", "required": true },
+        {
+          "type": "boolean",
+          "key": "consent",
+          "label": "You may contact me about this message.",
+          "required": true,
+          "validators": [
+            { "type": "equals", "value": true, "message": "Tick the box so we can reply." }
+          ]
+        }
+      ]
+    }
+  ],
+  "submit": { "outcomes": [{ "key": "received", "message": "Thanks, we will be in touch." }] }
+}

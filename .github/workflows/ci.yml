@@ -24,3 +24,34 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+
+  e2e:
+    # The admin and hosted apps of this commit against the latest server image.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Start the server, PostgreSQL and Mailpit
+        run: docker compose -f e2e/compose.yml --profile server up -d
+      - run: pnpm turbo run build --filter=@formkiln/admin --filter=@formkiln/hosted
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+      - run: pnpm --filter @formkiln/e2e exec playwright install --with-deps chromium
+      - run: pnpm --filter @formkiln/e2e e2e
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+      - name: Server log
+        if: failure()
+        run: docker compose -f e2e/compose.yml --profile server logs server
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 7
