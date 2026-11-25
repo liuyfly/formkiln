@@ -13,11 +13,11 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import { useCallback, useEffect, useState } from "react";
-import { Notice, type NoticeMessage } from "../../../../../components/Notice";
-import { PublishDialog } from "../../../../../components/PublishDialog";
-import { useUser } from "../../../../../components/Shell";
-import { api, canEdit, errorMessage, type Version } from "../../../../../lib/api";
-import { DateTime } from "../../../../../lib/format";
+import { Notice, type NoticeMessage } from "../../../../../../components/Notice";
+import { PublishDialog } from "../../../../../../components/PublishDialog";
+import { useUser } from "../../../../../../components/Shell";
+import { api, canEdit, errorMessage, type Version } from "../../../../../../lib/api";
+import { DateTime } from "../../../../../../lib/format";
 
 export function VersionsView({ formKey }: { formKey: string }) {
   const user = useUser();

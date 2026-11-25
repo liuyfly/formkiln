@@ -14,11 +14,11 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import QRCode from "qrcode";
 import { useEffect, useState, type ReactNode } from "react";
-import { CopyButton } from "../../../../../components/CopyButton";
-import { Notice, type NoticeMessage } from "../../../../../components/Notice";
-import { useUser } from "../../../../../components/Shell";
-import { api, canEdit, errorMessage, type FormSummary } from "../../../../../lib/api";
-import { DateTime } from "../../../../../lib/format";
+import { CopyButton } from "../../../../../../components/CopyButton";
+import { Notice, type NoticeMessage } from "../../../../../../components/Notice";
+import { useUser } from "../../../../../../components/Shell";
+import { api, canEdit, errorMessage, type FormSummary } from "../../../../../../lib/api";
+import { DateTime } from "../../../../../../lib/format";
 
 type Mode = FormSummary["accessMode"];
 

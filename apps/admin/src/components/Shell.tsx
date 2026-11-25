@@ -157,7 +157,9 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
           sx={{ flexGrow: 1, minWidth: 0, p: { xs: 2, sm: 3 }, bgcolor: "background.default" }}
         >
           <Toolbar />
-          <Box sx={{ maxWidth: 1100, mx: "auto" }}>{children}</Box>
+          <Box sx={{ maxWidth: pathname.endsWith("/edit") ? "none" : 1100, mx: "auto" }}>
+            {children}
+          </Box>
         </Box>
       </Box>
     </UserContext.Provider>
