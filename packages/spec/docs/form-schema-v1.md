@@ -66,13 +66,14 @@ Unknown properties MUST be rejected, except inside `meta`.
 
 ### 3.1 Settings
 
-| Property         | Type                    | Default           | Description                                                                                                                                                                                                                        |
-| ---------------- | ----------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `navigation`     | `"paged"` \| `"single"` | `"paged"`         | `paged` shows one page at a time; `single` renders all pages in one scroll.                                                                                                                                                        |
-| `timeZone`       | IANA time zone          | `"UTC"`           | Time zone used by `date.today`.                                                                                                                                                                                                    |
-| `defaultLocale`  | BCP 47 tag              | `"en"`            | Locale used when a Text has no translation for the active locale.                                                                                                                                                                  |
-| `locales`        | BCP 47 tag[]            | `[defaultLocale]` | Locales the form is translated into.                                                                                                                                                                                               |
-| `inactiveValues` | `"retain"` \| `"clear"` | `"retain"`        | What happens to the stored value of a field that becomes inactive. `retain` keeps it in the draft so it reappears if the field becomes active again; `clear` deletes it. In both cases inactive values are never submitted (§7.3). |
+| Property         | Type                    | Default            | Description                                                                                                                                                                                                                        |
+| ---------------- | ----------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `navigation`     | `"paged"` \| `"single"` | `"paged"`          | `paged` shows one page at a time; `single` renders all pages in one scroll.                                                                                                                                                        |
+| `timeZone`       | IANA time zone          | `"UTC"`            | Time zone used by `date.today`.                                                                                                                                                                                                    |
+| `defaultLocale`  | BCP 47 tag              | `"en"`             | Locale used when a Text has no translation for the active locale.                                                                                                                                                                  |
+| `locales`        | BCP 47 tag[]            | `[defaultLocale]`  | Locales the form is translated into.                                                                                                                                                                                               |
+| `inactiveValues` | `"retain"` \| `"clear"` | `"retain"`         | What happens to the stored value of a field that becomes inactive. `retain` keeps it in the draft so it reappears if the field becomes active again; `clear` deletes it. In both cases inactive values are never submitted (§7.3). |
+| `layout`         | Layout                  | `{ "columns": 3 }` | The layout grid; see §5.5.                                                                                                                                                                                                         |
 
 ### 3.2 Keys
 
@@ -118,6 +119,7 @@ Every element has a `type` and a `key`. Common optional properties:
 | Property  | Type      | Description                                      |
 | --------- | --------- | ------------------------------------------------ |
 | `visible` | Condition | Default `true`. See §7.1.                        |
+| `width`   | integer   | Columns the element spans. See §5.5.             |
 | `meta`    | object    | Free-form host data, ignored by implementations. |
 
 ### 5.1 Content
@@ -208,6 +210,36 @@ All fields share these properties:
 | `validators`      | Validator[] | no       | See §9.                                                                                                                                             |
 | `sensitive`       | boolean     | no       | Marks personal or secret data. Servers SHOULD encrypt it at rest and mask it in administrative views; implementations MUST NOT log it.              |
 | `autocomplete`    | string      | no       | HTML `autocomplete` token hint (for example `given-name`).                                                                                          |
+
+### 5.5 Layout
+
+Elements are laid out on a grid of equal columns. `settings.layout.columns` sets the number of columns, from 1 to 12, default 3. An element's `width` is the number of columns it spans, from 1 to `columns`; it defaults to `columns`, the full width.
+
+```json
+{
+  "settings": { "layout": { "columns": 3 } },
+  "pages": [
+    {
+      "key": "contact",
+      "elements": [
+        { "type": "text", "key": "givenName", "label": "First name", "width": 1 },
+        { "type": "text", "key": "familyName", "label": "Last name", "width": 2 },
+        { "type": "email", "key": "email", "label": "Email" }
+      ]
+    }
+  ]
+}
+```
+
+Here the two names share the first row and the email field takes the second.
+
+Placement:
+
+1. The elements of a page, of a panel and of each repeater item form one sequence, in document order. A panel's elements are placed on a grid of the same number of columns inside the panel's own width; a repeater item's elements likewise inside the repeater.
+2. An element is placed on the current row if its width fits in the columns left on that row; otherwise it starts a new row. Earlier rows are never back-filled, so the visual order is always the document order.
+3. Elements that are not visible (§7.1) and `hidden` fields take no space; the elements after them move up.
+
+The layout is presentational only. It MUST NOT affect validation, submission data or the order in which errors are reported. Renderers SHOULD keep the reading and focus order equal to the document order, and MAY place every element on its own row when the available width is too small for the grid (for example on a phone), which is what WCAG 2.1 success criterion 1.4.10 (reflow) asks for.
 
 ## 6. Field types and the value model
 
@@ -431,6 +463,7 @@ A form document is valid only if it conforms to the [JSON Schema](../schema/form
 | `duplicateOption`     | Option values are unique within a field.                                                                                                                                                                                                   | the `value` of every occurrence after the first           |
 | `requiredParts`       | `requiredParts` ⊆ `parts`.                                                                                                                                                                                                                 | `requiredParts`                                           |
 | `validatorType`       | Validators are applied only to the value types listed in §9.                                                                                                                                                                               | the validator                                             |
+| `width`               | Every `width` is at most `settings.layout.columns` (default 3).                                                                                                                                                                            | `width`                                                   |
 
 Each error is reported as `{ "pointer": "<JSON Pointer>", "code": "<code>" }`, where the pointer ([RFC 6901](https://www.rfc-editor.org/rfc/rfc6901)) locates the offending value. For example, the `/` operator is escaped as `~1`. Errors are compared as an unordered set.
 

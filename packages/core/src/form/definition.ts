@@ -124,6 +124,7 @@ export function validateDefinition(doc: FormDocument): DefinitionError[] {
 
   checkKeys(model, report);
   checkOutcomeKeys(doc, report);
+  checkWidths(model, report);
 
   const checkExpression = (expression: Expression, pointer: string, scope: Scope): void => {
     if (Array.isArray(expression)) {
@@ -195,6 +196,16 @@ function isKnownReference(path: string, model: FormModel, scope: Scope): boolean
 }
 
 type Report = (pointer: string, code: DefinitionError["code"]) => void;
+
+/** Form Schema §5.5: an element spans at most the columns of the layout grid. */
+function checkWidths(model: FormModel, report: Report): void {
+  const columns = model.doc.settings?.layout?.columns ?? 3;
+  for (const node of model.nodes) {
+    if (node.kind === "page") continue;
+    const width = (node.source as { width?: number }).width;
+    if (width !== undefined && width > columns) report(`${node.pointer}/width`, "width");
+  }
+}
 
 function checkKeys(model: FormModel, report: Report): void {
   const seen = new Map<FormNode | null, Set<string>>();

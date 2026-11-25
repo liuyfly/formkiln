@@ -63,6 +63,31 @@ describe("form schema v1", () => {
     expect(validateForm(variant(mutate))).toBe(false);
   });
 
+  it("accepts a layout grid and element widths", () => {
+    const doc = variant((d: any) => {
+      d.settings.layout = { columns: 4 };
+      d.pages[0].elements[0].width = 4; // content
+      d.pages[0].elements[1].width = 2; // field
+      d.pages[1].elements[2].width = 3; // repeater
+      d.pages[1].elements[2].elements[0].width = 1; // field in a repeater item
+      d.pages[2].elements[1].width = 2; // panel
+    });
+    expect(validateForm(doc)).toBe(true);
+  });
+
+  it.each([
+    ["a width of 0", (d: any) => (d.pages[0].elements[1].width = 0)],
+    ["a width of 13", (d: any) => (d.pages[0].elements[1].width = 13)],
+    ["a fractional width", (d: any) => (d.pages[0].elements[1].width = 1.5)],
+    ["a width given as text", (d: any) => (d.pages[0].elements[1].width = "half")],
+    ["a width on a page", (d: any) => (d.pages[0].width = 1)],
+    ["0 columns", (d: any) => (d.settings.layout = { columns: 0 })],
+    ["13 columns", (d: any) => (d.settings.layout = { columns: 13 })],
+    ["an unknown layout property", (d: any) => (d.settings.layout = { gap: 8 })],
+  ])("rejects %s", (_name, mutate) => {
+    expect(validateForm(variant(mutate))).toBe(false);
+  });
+
   it("assigns a value type to every field type except hidden", () => {
     expect(Object.keys(FIELD_VALUE_TYPES)).toHaveLength(16);
   });
