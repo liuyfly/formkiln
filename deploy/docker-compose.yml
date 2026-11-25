@@ -1,0 +1,87 @@
+# Formkiln: server, admin and hosted fill-in site with PostgreSQL.
+#
+#   cp .env.example .env    # then set FORMKILN_ENCRYPTION_KEY and the admin email
+#   docker compose --profile mailpit up -d
+#
+# Admin: http://localhost:3200   Hosted forms: http://localhost:3100/f/<key>
+# Emails (with the mailpit profile): http://localhost:8025
+#
+# For production, put the admin and hosted ports behind an HTTPS reverse proxy that appends the
+# client address to X-Forwarded-For, use a real SMTP server and keep the API port private.
+name: formkiln
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: formkiln
+      POSTGRES_USER: formkiln
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U formkiln -d formkiln"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    image: ghcr.io/liuyfly/formkiln-server:${FORMKILN_VERSION:-edge}
+    restart: unless-stopped
+    environment:
+      FORMKILN_DB_URL: jdbc:postgresql://postgres:5432/formkiln
+      FORMKILN_DB_USERNAME: formkiln
+      FORMKILN_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      FORMKILN_ENCRYPTION_KEY: ${FORMKILN_ENCRYPTION_KEY:?Set FORMKILN_ENCRYPTION_KEY in .env (openssl rand -base64 32)}
+      FORMKILN_BOOTSTRAP_ADMIN_EMAIL: ${FORMKILN_BOOTSTRAP_ADMIN_EMAIL:-}
+      FORMKILN_ADMIN_URL: ${FORMKILN_ADMIN_URL:-http://localhost:3200}
+      FORMKILN_SERVICE_TOKEN: ${FORMKILN_SERVICE_TOKEN:-}
+      FORMKILN_SMTP_HOST: ${FORMKILN_SMTP_HOST:-mailpit}
+      FORMKILN_SMTP_PORT: ${FORMKILN_SMTP_PORT:-1025}
+      FORMKILN_MAIL_FROM: ${FORMKILN_MAIL_FROM:-Formkiln <no-reply@localhost>}
+      FORMKILN_STORAGE_PATH: /data/files
+      FORMKILN_TURNSTILE_SITE_KEY: ${FORMKILN_TURNSTILE_SITE_KEY:-}
+      FORMKILN_TURNSTILE_SECRET: ${FORMKILN_TURNSTILE_SECRET:-}
+    volumes:
+      - files:/data/files
+    # Only the admin and hosted apps talk to the API. Uncomment to call it from the host
+    # (for example to publish forms with the service token).
+    # ports:
+    #   - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  admin:
+    image: ghcr.io/liuyfly/formkiln-admin:${FORMKILN_VERSION:-edge}
+    restart: unless-stopped
+    environment:
+      FORMKILN_API_URL: http://server:8080
+      FORMKILN_HOSTED_URL: ${FORMKILN_HOSTED_URL:-http://localhost:3100}
+    ports:
+      - "3200:3200"
+    depends_on:
+      - server
+
+  hosted:
+    image: ghcr.io/liuyfly/formkiln-hosted:${FORMKILN_VERSION:-edge}
+    restart: unless-stopped
+    environment:
+      FORMKILN_API_URL: http://server:8080
+      FORMKILN_FRAME_ANCESTORS: ${FORMKILN_FRAME_ANCESTORS:-'self'}
+    ports:
+      - "3100:3100"
+    depends_on:
+      - server
+
+  mailpit:
+    # Catches all email for trying Formkiln out. Replace with a real SMTP server in production.
+    image: axllent/mailpit:latest
+    profiles: ["mailpit"]
+    ports:
+      - "8025:8025"
+
+volumes:
+  postgres:
+  files:
