@@ -138,6 +138,8 @@ export interface FormSummary {
   submissionCount: number;
   /** A working copy with changes that are not published yet. */
   unpublishedChanges: boolean;
+  /** Days submissions are kept; null keeps them until deleted. */
+  retentionDays: number | null;
 }
 
 export interface Version {
@@ -213,4 +215,11 @@ export interface MailEntry {
   lastError: string | null;
   createdAt: string;
   sentAt: string | null;
+}
+
+export interface ErasureResult {
+  forms: Record<string, number>;
+  total: number;
+  deleted: boolean;
+  note: string;
 }

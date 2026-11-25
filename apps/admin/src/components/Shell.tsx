@@ -3,6 +3,7 @@
 import GroupOutlined from "@mui/icons-material/GroupOutlined";
 import DescriptionOutlined from "@mui/icons-material/DescriptionOutlined";
 import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
+import PersonRemoveOutlined from "@mui/icons-material/PersonRemoveOutlined";
 import Logout from "@mui/icons-material/Logout";
 import Menu from "@mui/icons-material/Menu";
 import SettingsOutlined from "@mui/icons-material/SettingsOutlined";
@@ -45,6 +46,12 @@ const NAV: NavItem[] = [
   { href: "/forms", label: "Forms", icon: <DescriptionOutlined /> },
   { href: "/members", label: "Members", icon: <GroupOutlined />, adminOnly: true },
   { href: "/audit", label: "Audit log", icon: <HistoryOutlined />, adminOnly: true },
+  {
+    href: "/data-requests",
+    label: "Data requests",
+    icon: <PersonRemoveOutlined />,
+    adminOnly: true,
+  },
   { href: "/settings", label: "Settings", icon: <SettingsOutlined /> },
 ];
 
