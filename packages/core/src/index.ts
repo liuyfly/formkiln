@@ -12,3 +12,14 @@ export { validateAnswers, type FormEvaluation, type ValidateAnswersOptions } fro
 export function isSupportedSchemaVersion(version: number): version is SchemaVersion {
   return version === SCHEMA_VERSION;
 }
+export {
+  createFormController,
+  FormDefinitionError,
+  type FormController,
+  type FormControllerOptions,
+  type FormState,
+  type FormStatus,
+  type StepResult,
+  type SubmitHandler,
+  type SubmitResult,
+} from "./controller/controller";

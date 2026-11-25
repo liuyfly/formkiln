@@ -30,6 +30,24 @@ result.submission; // active, non-null values to store
 result.inactive; // paths of inactive elements
 ```
 
+## Run a form session
+
+`createFormController` holds the state of one form session for any UI framework. `@formkiln/react` is built on it.
+
+```ts
+import { createFormController } from "@formkiln/core";
+
+const controller = createFormController(form, { initialAnswers: draft, locale: "en" });
+const unsubscribe = controller.subscribe(() => render(controller.getState()));
+
+controller.setValue("email", "ada@example.com");
+controller.touch("email"); // reveal this field's errors (usually on blur)
+controller.next(); // { ok: false, firstErrorPath, page } when the current page has errors
+await controller.submit(async ({ submission, outcome }) => api.submit(submission));
+```
+
+`getState()` returns the answers, the full evaluation, the active pages, the current page, the errors the user should see and the submission status. Errors become visible for touched fields, for a page after `next()` and for everything after `submit()`.
+
 ## Evaluate expressions
 
 ```ts
