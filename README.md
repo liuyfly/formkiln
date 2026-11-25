@@ -28,7 +28,7 @@
 | [`@formkiln/core`](packages/core)   | Framework-agnostic engine: expressions, validation, runtime state |
 | [`@formkiln/react`](packages/react) | React renderer (`<KilnForm />`)                                   |
 
-Apps (not published): [`apps/playground`](apps/playground) runs hand-written schemas during development. `apps/admin` (builder) and `apps/hosted` (public fill-in site) are planned.
+Apps (not published): [`apps/playground`](apps/playground) runs hand-written schemas during development; [`apps/hosted`](apps/hosted) is the public fill-in site for forms published to `formkiln-server`. `apps/admin` (builder) is planned.
 
 ## Development
 

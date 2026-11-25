@@ -4,3 +4,5 @@ node_modules
 pnpm-lock.yaml
 LICENSE
 CHANGELOG.md
+.next
+next-env.d.ts

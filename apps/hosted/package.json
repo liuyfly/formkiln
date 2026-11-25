@@ -1,0 +1,25 @@
+{
+  "name": "@formkiln/hosted",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3100",
+    "build": "next build",
+    "start": "next start --port 3100",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@formkiln/react": "workspace:*",
+    "@formkiln/spec": "workspace:*",
+    "next": "^16.4.6",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0"
+  }
+}
