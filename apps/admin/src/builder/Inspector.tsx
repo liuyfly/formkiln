@@ -21,7 +21,7 @@ import { ConditionEditor } from "./ConditionEditor";
 import { referenceableFields } from "./logic";
 import { JsonInput, LocalizedText, NumberInput, SectionTitle, Toggle, textIn } from "./inputs";
 import { useBuilder } from "./store";
-import { elementAt, type Loc } from "./tree";
+import { columnsOf, elementAt, setColumns, type Loc } from "./tree";
 
 const KEY = /^[a-z][a-zA-Z0-9_]{0,63}$/;
 
@@ -45,6 +45,38 @@ function useFieldRefs(loc: Loc | null) {
   const key = loc ? `${loc.page}.${loc.path.join(".")}` : "";
   // `key` identifies `loc` (a new object on every render).
   return useMemo(() => referenceableFields(document, loc), [document, key]);
+}
+
+/** Columns an element spans (Form Schema §5.5); the full row stores no width. */
+function WidthInput({
+  value,
+  onChange,
+}: {
+  value: number | undefined;
+  onChange: (width: number | undefined) => void;
+}) {
+  const columns = useBuilder((state) => columnsOf(state.document));
+  const options = Array.from({ length: columns - 1 }, (_, i) => i + 1);
+  return (
+    <TextField
+      size="small"
+      select
+      label="Width"
+      value={value !== undefined && value < columns ? String(value) : "full"}
+      onChange={(event) =>
+        onChange(event.target.value === "full" ? undefined : Number(event.target.value))
+      }
+      helperText="Narrower elements share a row with the ones after them while they fit."
+      disabled={columns === 1}
+    >
+      <MenuItem value="full">Full row</MenuItem>
+      {options.map((width) => (
+        <MenuItem key={width} value={String(width)}>
+          {width} of {columns} columns
+        </MenuItem>
+      ))}
+    </TextField>
+  );
 }
 
 function KeyInput({
@@ -549,6 +581,13 @@ function ElementInspector({ loc, element }: { loc: Loc; element: Element }) {
         </>
       )}
 
+      {type !== "hidden" && (
+        <>
+          <SectionTitle>Layout</SectionTitle>
+          <WidthInput value={element.width} onChange={(width) => update("width", width, false)} />
+        </>
+      )}
+
       <SectionTitle>Visibility</SectionTitle>
       <ConditionEditor
         kind="visible"
@@ -775,6 +814,26 @@ function FormInspector() {
         }}
         helperText="Add languages to translate texts; each text gets a Translations section."
       />
+      <TextField
+        size="small"
+        select
+        label="Layout columns"
+        value={String(columnsOf(document))}
+        onChange={(event) => {
+          const columns = Number(event.target.value);
+          edit((draft) => setColumns(draft as FormDocument, columns === 3 ? undefined : columns));
+        }}
+        helperText="Elements can span some of the columns to share a row. Narrowing removes widths that no longer fit."
+      >
+        {[...new Set([1, 2, 3, 4, 6, 12, columnsOf(document)])]
+          .sort((a, b) => a - b)
+          .map((columns) => (
+            <MenuItem key={columns} value={String(columns)}>
+              {columns === 1 ? "1 column" : `${columns} columns`}
+              {columns === 3 ? " (default)" : ""}
+            </MenuItem>
+          ))}
+      </TextField>
       <Divider />
       <SectionTitle>After submitting</SectionTitle>
       <OutcomesEditor />

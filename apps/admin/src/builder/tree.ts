@@ -265,3 +265,50 @@ export function moveTo(doc: FormDocument, from: Loc, slot: Slot): Loc | null {
   list.splice(index, 0, element);
   return { page: target.page, path: [...target.parent, index] };
 }
+
+// ---------------------------------------------------------------- layout (Form Schema §5.5)
+
+export const DEFAULT_COLUMNS = 3;
+
+export function columnsOf(doc: FormDocument): number {
+  return doc.settings?.layout?.columns ?? DEFAULT_COLUMNS;
+}
+
+function eachElement(elements: Element[], visit: (element: Element) => void): void {
+  for (const element of elements) {
+    visit(element);
+    const children = childrenOf(element);
+    if (children) eachElement(children, visit);
+  }
+}
+
+/** Whether any element sets a width, which switches the form to the layout grid. */
+export function usesWidths(doc: FormDocument): boolean {
+  let found = false;
+  for (const page of doc.pages)
+    eachElement(page.elements, (e) => (found ||= e.width !== undefined));
+  return found;
+}
+
+/**
+ * Sets the number of columns (`undefined` = the default) and, in the same change, makes every
+ * width fit: a width that no longer fits becomes the full row (no `width`).
+ */
+export function setColumns(doc: FormDocument, columns: number | undefined): void {
+  const count = columns ?? DEFAULT_COLUMNS;
+  for (const page of doc.pages) {
+    eachElement(page.elements, (element) => {
+      if (element.width !== undefined && element.width >= count) delete element.width;
+    });
+  }
+  if (columns === undefined || columns === DEFAULT_COLUMNS) {
+    if (doc.settings?.layout) delete doc.settings.layout.columns;
+    if (doc.settings?.layout && Object.keys(doc.settings.layout).length === 0) {
+      delete doc.settings.layout;
+    }
+    if (doc.settings && Object.keys(doc.settings).length === 0) delete doc.settings;
+  } else {
+    doc.settings ??= {};
+    doc.settings.layout = { ...doc.settings.layout, columns };
+  }
+}

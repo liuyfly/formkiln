@@ -29,7 +29,16 @@ import { catalogEntry } from "./catalog";
 import { DropZone, useElementDrag, usePageDrop } from "./dnd";
 import { textIn } from "./inputs";
 import { useBuilder } from "./store";
-import { childrenOf, elementAt, isContainer, locOfPointer, sameLoc, type Loc } from "./tree";
+import {
+  childrenOf,
+  columnsOf,
+  elementAt,
+  isContainer,
+  locOfPointer,
+  sameLoc,
+  usesWidths,
+  type Loc,
+} from "./tree";
 
 function useDefaultLocale() {
   return useBuilder((state) => state.document.settings?.defaultLocale ?? "en");
@@ -182,7 +191,13 @@ function ElementCard({
         opacity: drag.isDragging ? 0.4 : 1,
       }}
     >
-      <Stack direction="row" spacing={1} sx={{ alignItems: "center", minHeight: 30 }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        useFlexGap
+        // Narrow cards (Form Schema §5.5 widths) move the actions under the title.
+        sx={{ alignItems: "center", minHeight: 30, flexWrap: "wrap" }}
+      >
         {!readOnly && (
           <Box
             ref={drag.setNodeRef}
@@ -214,7 +229,8 @@ function ElementCard({
           }}
           sx={{
             display: "block",
-            flexGrow: 1,
+            // A zero basis keeps the title beside the drag handle in narrow cards.
+            flex: "1 1 0",
             minWidth: 0,
             textAlign: "left",
             borderRadius: 1,
@@ -302,6 +318,14 @@ function ElementCard({
   );
 }
 
+/** Grid columns of an element: hidden fields and full-width elements take the whole row. */
+function spanOf(element: Element, columns: number): string {
+  const width = element.width;
+  return element.type === "hidden" || width === undefined || width >= columns
+    ? "1 / -1"
+    : `span ${width}`;
+}
+
 /** Elements of one list with drop zones between them while dragging. */
 function ElementList({
   elements,
@@ -316,6 +340,8 @@ function ElementList({
   readOnly: boolean;
   emptyText: string;
 }) {
+  const layout = useBuilder((state) => usesWidths(state.document));
+  const columns = useBuilder((state) => columnsOf(state.document));
   if (elements.length === 0) {
     return (
       <>
@@ -326,20 +352,38 @@ function ElementList({
       </>
     );
   }
+  const items = elements.map((child, index) => (
+    <Box
+      key={`${child.key}-${index}`}
+      sx={{ display: "grid", gap: 1, ...(layout && { gridColumn: spanOf(child, columns) }) }}
+    >
+      {/* Inside the cell: dropping here inserts before this element, and rows stay intact. */}
+      <DropZone slot={{ page, parent, index }} />
+      <ElementCard element={child} loc={{ page, path: [...parent, index] }} readOnly={readOnly} />
+    </Box>
+  ));
+  const end = <DropZone slot={{ page, parent, index: elements.length }} />;
+  if (!layout) {
+    return (
+      <>
+        {items}
+        {end}
+      </>
+    );
+  }
+  // The layout grid of Form Schema §5.5, as the form renders it.
   return (
-    <>
-      {elements.map((child, index) => (
-        <Box key={`${child.key}-${index}`} sx={{ display: "grid", gap: 1 }}>
-          <DropZone slot={{ page, parent, index }} />
-          <ElementCard
-            element={child}
-            loc={{ page, path: [...parent, index] }}
-            readOnly={readOnly}
-          />
-        </Box>
-      ))}
-      <DropZone slot={{ page, parent, index: elements.length }} />
-    </>
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+        gap: 1,
+        alignItems: "start",
+      }}
+    >
+      {items}
+      <Box sx={{ gridColumn: "1 / -1" }}>{end}</Box>
+    </Box>
   );
 }
 

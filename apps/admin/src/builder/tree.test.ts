@@ -15,7 +15,9 @@ import {
   moveWithin,
   pointerOf,
   removeElement,
+  setColumns,
   uniqueKey,
+  usesWidths,
 } from "./tree";
 
 const text = (key: string): Field => ({ type: "text", key, label: key });
@@ -185,5 +187,40 @@ describe("element tree", () => {
     });
     expect(loc).toEqual({ page: 0, path: [2, 0] });
     expect(elementAt(result, { page: 0, path: [2, 0] })?.key).toBe("n");
+  });
+});
+
+describe("layout", () => {
+  const widths = (d: FormDocument) =>
+    JSON.stringify(d.pages[0]!.elements, (k, v) =>
+      k === "label" || k === "type" || k === "key" ? undefined : v,
+    );
+
+  it("notices widths at any depth", () => {
+    expect(usesWidths(doc)).toBe(false);
+    const nested = produce(doc, (d) => {
+      ((d.pages[0]!.elements[1] as any).elements[0] as Element).width = 1;
+    });
+    expect(usesWidths(nested)).toBe(true);
+  });
+
+  it("drops widths that no longer fit when columns shrink", () => {
+    const wide = produce(doc, (d) => {
+      setColumns(d, 4);
+      d.pages[0]!.elements[0]!.width = 3;
+      (d.pages[0]!.elements[1] as any).elements[1].width = 1;
+    });
+    expect(wide.settings).toEqual({ layout: { columns: 4 } });
+    const narrow = produce(wide, (d) => setColumns(d, 2));
+    expect(narrow.settings).toEqual({ layout: { columns: 2 } });
+    expect(narrow.pages[0]!.elements[0]!.width).toBeUndefined();
+    expect((narrow.pages[0]!.elements[1] as any).elements[1].width).toBe(1);
+    expect(widths(narrow)).toContain('"width":1');
+  });
+
+  it("removes the setting when going back to the default", () => {
+    const six: FormDocument = produce(doc, (d) => setColumns(d, 6));
+    const back = produce(six, (d) => setColumns(d, undefined));
+    expect(back.settings).toBeUndefined();
   });
 });
