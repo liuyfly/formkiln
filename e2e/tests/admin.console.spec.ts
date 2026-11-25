@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { account } from "../lib/account";
 import { submit } from "../lib/api";
 import { expectAccessible } from "../lib/axe";
-import { totp } from "../lib/totp";
+import { freshTotp } from "../lib/totp";
 
 test("lists forms and their submissions", async ({ page }) => {
   const marker = `Grace ${Date.now()}`;
@@ -26,6 +26,7 @@ test.describe("signed out", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test("signs in with a password and an authenticator code", async ({ page }) => {
+    test.setTimeout(60_000); // May wait for a fresh authenticator code.
     const { email, password, secret } = account();
     await page.goto("/");
     await expect(page).toHaveURL(/\/login/);
@@ -38,7 +39,7 @@ test.describe("signed out", () => {
 
     await page.getByRole("textbox", { name: "Password", exact: true }).fill(password);
     await page.getByRole("button", { name: "Continue" }).click();
-    await page.getByLabel("6-digit code").fill(totp(secret));
+    await page.getByLabel("6-digit code").fill(await freshTotp(secret));
     await page.getByRole("button", { name: "Verify" }).click();
     await expect(page.getByRole("banner").getByRole("button", { name: "Sign out" })).toBeVisible();
 
