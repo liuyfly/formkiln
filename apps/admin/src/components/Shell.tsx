@@ -1,7 +1,8 @@
 "use client";
 
 import GroupOutlined from "@mui/icons-material/GroupOutlined";
-import HomeOutlined from "@mui/icons-material/HomeOutlined";
+import DescriptionOutlined from "@mui/icons-material/DescriptionOutlined";
+import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
 import Logout from "@mui/icons-material/Logout";
 import Menu from "@mui/icons-material/Menu";
 import SettingsOutlined from "@mui/icons-material/SettingsOutlined";
@@ -41,8 +42,9 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { href: "/", label: "Home", icon: <HomeOutlined /> },
+  { href: "/forms", label: "Forms", icon: <DescriptionOutlined /> },
   { href: "/members", label: "Members", icon: <GroupOutlined />, adminOnly: true },
+  { href: "/audit", label: "Audit log", icon: <HistoryOutlined />, adminOnly: true },
   { href: "/settings", label: "Settings", icon: <SettingsOutlined /> },
 ];
 
@@ -68,7 +70,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
       <Divider />
       <List component="nav" aria-label="Main" sx={{ px: 1 }}>
         {NAV.filter((item) => !item.adminOnly || user.role === "admin").map((item) => {
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <ListItemButton
               key={item.href}

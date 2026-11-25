@@ -3,6 +3,7 @@ import {
   downstreamResponseHeaders,
   isAllowedPath,
   sessionCookie,
+  staleCookieCleanup,
   upstreamRequestHeaders,
 } from "./upstream";
 
@@ -32,6 +33,14 @@ describe("admin gateway", () => {
     expect(headers.get("x-requested-with")).toBe("formkiln");
     expect(headers.get("x-forwarded-for")).toBe("203.0.113.5");
     expect(sessionCookie(null)).toBeNull();
+    // The site-wide cookie (sent last) wins over a stale /v1-scoped one.
+    expect(sessionCookie("formkiln_session=stale; formkiln_session=current")).toBe(
+      "formkiln_session=current",
+    );
+    expect(staleCookieCleanup("formkiln_session=stale; formkiln_session=current")).toContain(
+      "Path=/v1; Max-Age=0",
+    );
+    expect(staleCookieCleanup("formkiln_session=current")).toBeNull();
   });
 
   it("relays the session cookie and safe response headers", () => {

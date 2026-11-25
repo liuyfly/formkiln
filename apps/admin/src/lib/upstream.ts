@@ -25,13 +25,30 @@ export function isAllowedPath(path: string): boolean {
   return ALLOWED.test(path) && !path.includes("..") && !path.includes("//");
 }
 
-/** Only the session cookie is forwarded; other cookies of this site stay here. */
-export function sessionCookie(cookieHeader: string | null): string | null {
+function sessionValues(cookieHeader: string | null): string[] {
+  const values: string[] = [];
   for (const part of (cookieHeader ?? "").split(";")) {
     const [name, ...rest] = part.trim().split("=");
-    if (name === SESSION_COOKIE) return `${SESSION_COOKIE}=${rest.join("=")}`;
+    if (name === SESSION_COOKIE) values.push(rest.join("="));
   }
-  return null;
+  return values;
+}
+
+/**
+ * Only the session cookie is forwarded; other cookies of this site stay here. Browsers send the
+ * cookie with the most specific path first, so a stale cookie scoped to /v1 (set before the
+ * cookie was re-scoped to the whole site) would shadow the current one: the site-wide one wins.
+ */
+export function sessionCookie(cookieHeader: string | null): string | null {
+  const values = sessionValues(cookieHeader);
+  return values.length ? `${SESSION_COOKIE}=${values[values.length - 1]}` : null;
+}
+
+/** Deletes a stale /v1-scoped session cookie when the browser still sends one. */
+export function staleCookieCleanup(cookieHeader: string | null): string | null {
+  return sessionValues(cookieHeader).length > 1
+    ? `${SESSION_COOKIE}=; Path=/v1; Max-Age=0; HttpOnly; SameSite=Strict`
+    : null;
 }
 
 export function upstreamRequestHeaders(request: Request): Headers {
