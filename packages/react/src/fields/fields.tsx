@@ -39,6 +39,7 @@ import {
   TimeField,
 } from "react-aria-components";
 import type { FieldComponent, FieldComponents, FieldProps } from "../types";
+import { CompositeField, FileField } from "./complex";
 
 function Description({ children }: { children: string | undefined }) {
   return children ? (
@@ -454,8 +455,8 @@ export const defaultComponents: Required<FieldComponents> = {
   date: DateField,
   time: TimeInputField,
   datetime: DateTimeField,
-  name: UnsupportedField,
-  address: UnsupportedField,
-  file: UnsupportedField,
+  name: CompositeField,
+  address: CompositeField,
+  file: FileField,
   hidden: () => null,
 };
