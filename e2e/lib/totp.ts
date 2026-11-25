@@ -1,4 +1,7 @@
 import { createHmac } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
+import { TOTP_STEP_FILE } from "./env";
 
 function base32(secret: string): Buffer {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -21,4 +24,19 @@ export function totp(secret: string, at = Date.now()): string {
   const offset = mac[mac.length - 1]! & 0x0f;
   const code = (mac.readUInt32BE(offset) & 0x7fffffff) % 1_000_000;
   return code.toString().padStart(6, "0");
+}
+
+/**
+ * A code the server has not seen yet. Each code is accepted once, so after one has been used
+ * (by this or another test worker) this waits for the next 30-second step, as a person would.
+ */
+export async function freshTotp(secret: string): Promise<string> {
+  const last = existsSync(TOTP_STEP_FILE) ? Number(readFileSync(TOTP_STEP_FILE, "utf8")) : -1;
+  while (Math.floor(Date.now() / 30_000) <= last) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  const now = Date.now();
+  mkdirSync(dirname(TOTP_STEP_FILE), { recursive: true });
+  writeFileSync(TOTP_STEP_FILE, String(Math.floor(now / 30_000)));
+  return totp(secret, now);
 }

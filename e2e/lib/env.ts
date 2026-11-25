@@ -9,3 +9,4 @@ export const ADMIN_EMAIL = process.env.FORMKILN_BOOTSTRAP_ADMIN_EMAIL ?? "admin@
 export const ADMIN_PASSWORD = `E2e-${Date.now().toString(36)}-correct-horse`;
 export const STORAGE_STATE = new URL("../.auth/admin.json", import.meta.url).pathname;
 export const ACCOUNT_FILE = new URL("../.auth/account.json", import.meta.url).pathname;
+export const TOTP_STEP_FILE = new URL("../.auth/totp-step", import.meta.url).pathname;

@@ -4,7 +4,7 @@ import { expect, test as setup, type Page } from "@playwright/test";
 import { account } from "../lib/account";
 import { waitForMail } from "../lib/api";
 import { ACCOUNT_FILE, ADMIN_EMAIL, ADMIN_PASSWORD, STORAGE_STATE } from "../lib/env";
-import { totp } from "../lib/totp";
+import { freshTotp } from "../lib/totp";
 
 /**
  * Onboards the bootstrap admin the way a person would: the invitation email, a password and an
@@ -12,6 +12,7 @@ import { totp } from "../lib/totp";
  * already has the account (a local rerun), it signs in with the saved credentials instead.
  */
 setup("sign in as the bootstrap admin", async ({ page }) => {
+  setup.setTimeout(60_000); // May wait for a fresh authenticator code.
   if (existsSync(ACCOUNT_FILE)) {
     await signIn(page);
   } else {
@@ -29,7 +30,7 @@ async function acceptInvitation(page: Page): Promise<void> {
   const secret = (await page.locator("code").innerText()).replace(/\s/g, "");
   await page.getByRole("textbox", { name: "Password", exact: true }).fill(ADMIN_PASSWORD);
   await page.getByRole("textbox", { name: "Confirm password" }).fill(ADMIN_PASSWORD);
-  await page.getByLabel("6-digit code").fill(totp(secret));
+  await page.getByLabel("6-digit code").fill(await freshTotp(secret));
   await page.getByRole("button", { name: "Create account" }).click();
 
   await expect(page.getByRole("heading", { name: "Welcome to Formkiln" })).toBeVisible();
@@ -47,6 +48,6 @@ async function signIn(page: Page): Promise<void> {
   await page.getByLabel("Email").fill(email);
   await page.getByRole("textbox", { name: "Password", exact: true }).fill(password);
   await page.getByRole("button", { name: "Continue" }).click();
-  await page.getByLabel("6-digit code").fill(totp(secret));
+  await page.getByLabel("6-digit code").fill(await freshTotp(secret));
   await page.getByRole("button", { name: "Verify" }).click();
 }
