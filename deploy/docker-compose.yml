@@ -27,7 +27,7 @@ services:
       retries: 10
 
   server:
-    image: ghcr.io/liuyfly/formkiln-server:${FORMKILN_VERSION:-edge}
+    image: ghcr.io/liuyfly/formkiln-server:${FORMKILN_VERSION:-0.1}
     restart: unless-stopped
     environment:
       FORMKILN_DB_URL: jdbc:postgresql://postgres:5432/formkiln
@@ -36,6 +36,7 @@ services:
       FORMKILN_ENCRYPTION_KEY: ${FORMKILN_ENCRYPTION_KEY:?Set FORMKILN_ENCRYPTION_KEY in .env (openssl rand -base64 32)}
       FORMKILN_BOOTSTRAP_ADMIN_EMAIL: ${FORMKILN_BOOTSTRAP_ADMIN_EMAIL:-}
       FORMKILN_ADMIN_URL: ${FORMKILN_ADMIN_URL:-http://localhost:3200}
+      FORMKILN_HOSTED_URL: ${FORMKILN_HOSTED_URL:-http://localhost:3100}
       FORMKILN_SERVICE_TOKEN: ${FORMKILN_SERVICE_TOKEN:-}
       FORMKILN_SMTP_HOST: ${FORMKILN_SMTP_HOST:-mailpit}
       FORMKILN_SMTP_PORT: ${FORMKILN_SMTP_PORT:-1025}
@@ -43,6 +44,9 @@ services:
       FORMKILN_STORAGE_PATH: /data/files
       FORMKILN_TURNSTILE_SITE_KEY: ${FORMKILN_TURNSTILE_SITE_KEY:-}
       FORMKILN_TURNSTILE_SECRET: ${FORMKILN_TURNSTILE_SECRET:-}
+      FORMKILN_METRICS_TOKEN: ${FORMKILN_METRICS_TOKEN:-}
+      # A TTF font inside the container for PDFs with non-Latin text (mount it as a volume).
+      FORMKILN_PDF_FONT: ${FORMKILN_PDF_FONT:-}
     volumes:
       - files:/data/files
     # Only the admin and hosted apps talk to the API. Uncomment to call it from the host
@@ -54,7 +58,7 @@ services:
         condition: service_healthy
 
   admin:
-    image: ghcr.io/liuyfly/formkiln-admin:${FORMKILN_VERSION:-edge}
+    image: ghcr.io/liuyfly/formkiln-admin:${FORMKILN_VERSION:-0.1}
     restart: unless-stopped
     environment:
       FORMKILN_API_URL: http://server:8080
@@ -65,7 +69,7 @@ services:
       - server
 
   hosted:
-    image: ghcr.io/liuyfly/formkiln-hosted:${FORMKILN_VERSION:-edge}
+    image: ghcr.io/liuyfly/formkiln-hosted:${FORMKILN_VERSION:-0.1}
     restart: unless-stopped
     environment:
       FORMKILN_API_URL: http://server:8080

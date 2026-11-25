@@ -8,7 +8,9 @@ Formkiln runs as three containers plus PostgreSQL:
 | `admin`  | `ghcr.io/liuyfly/formkiln-admin`  | 3200 | Back office for your team (internal network or VPN)         |
 | `hosted` | `ghcr.io/liuyfly/formkiln-hosted` | 3100 | Public fill-in pages `/f/<form key>`                        |
 
-Tags: `edge` follows `main`; releases are tagged `1.2.3`, `1.2` and `latest`.
+Tags: releases are tagged `1.2.3`, `1.2` and `latest`; `edge` follows `main`. Run the same
+version of all three images. The compose file defaults to `0.1` (the latest 0.1.x); see the
+[changelog](../CHANGELOG.md).
 
 ## Try it
 
@@ -43,7 +45,18 @@ docker compose --profile mailpit up -d
 - **Files**: uploads are stored in the `files` volume. For several server instances use
   S3-compatible storage (`FORMKILN_STORAGE=s3`, see the server README).
 - **Bot protection**: set `FORMKILN_TURNSTILE_SITE_KEY` and `FORMKILN_TURNSTILE_SECRET`.
-- **Backups**: the `postgres` and `files` volumes hold all data.
+- **Backups**: the `postgres` and `files` volumes hold all data; back them up together with
+  `FORMKILN_ENCRYPTION_KEY`.
+- **Monitoring**: set `FORMKILN_METRICS_TOKEN` and scrape `server:8080/actuator/prometheus`.
+
+Backup and restore, upgrades, metrics, alert rules and troubleshooting are covered in the
+[operations guide](https://github.com/liuyfly/formkiln-server/blob/main/docs/operations.md).
+
+## Upgrading
+
+Back up the database, set `FORMKILN_VERSION` to the new release, then
+`docker compose pull && docker compose up -d`. The server migrates the database on start;
+migrations only move forward, so roll back by restoring the backup.
 
 All settings are environment variables; see the READMEs of
 [formkiln-server](https://github.com/liuyfly/formkiln-server), [admin](../apps/admin) and
