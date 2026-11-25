@@ -176,6 +176,26 @@ describe("createFormController", () => {
     expect(controller.errorsAt("addresses")).toEqual([]);
   });
 
+  it("evaluates required and readOnly conditions", () => {
+    const conditional = structuredClone(form);
+    conditional.pages[0]!.elements.push({
+      type: "text",
+      key: "reason",
+      label: "Reason",
+      required: { "==": [{ var: "guarantor" }, "no"] },
+      readOnly: { "==": [{ var: "name" }, "locked"] },
+    });
+    const controller = createFormController(conditional);
+    expect(controller.isRequired("name")).toBe(true);
+    expect(controller.isRequired("reason")).toBe(false);
+    controller.setValue("guarantor", "no");
+    expect(controller.isRequired("reason")).toBe(true);
+    expect(controller.isReadOnly("reason")).toBe(false);
+    controller.setValue("name", "locked");
+    expect(controller.isReadOnly("reason")).toBe(true);
+    expect(controller.isRequired("addresses.0.street")).toBe(true);
+  });
+
   it("notifies subscribers until they unsubscribe", () => {
     const controller = createFormController(form);
     const listener = vi.fn();

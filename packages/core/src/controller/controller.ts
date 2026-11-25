@@ -2,7 +2,9 @@ import type { DefinitionError, FormDocument, JsonValue, ValidationError } from "
 import { isPlainObject, type JsonObject } from "../expression/values";
 import { validateAnswers, type FormEvaluation } from "../form/answers";
 import { validateDefinition } from "../form/definition";
-import { buildModel } from "../form/model";
+import { evaluate } from "../expression/evaluate";
+import { buildModel, type FormNode } from "../form/model";
+import type { Expression, Field } from "@formkiln/spec";
 
 /** Thrown when a controller is created for a form document that is not valid (Form Schema §10). */
 export class FormDefinitionError extends Error {
@@ -82,6 +84,10 @@ export interface FormController {
   pageOf(path: string): string | undefined;
   /** Whether the element at a path is active. */
   isActive(path: string): boolean;
+  /** Whether the field at a path is currently required (its `required` condition holds). */
+  isRequired(path: string): boolean;
+  /** Whether the field at a path is currently read-only (calculated, or `readOnly` holds). */
+  isReadOnly(path: string): boolean;
 }
 
 const isUnder = (path: string, prefix: string) => path === prefix || path.startsWith(`${prefix}.`);
@@ -115,6 +121,43 @@ export function createFormController(
   let state: FormState;
 
   const pageOf = (path: string) => pageOfKey.get(path.split(".")[0]!);
+
+  /** Resolves a field node from a path (`key` or `repeater.index.child`). */
+  const fieldAt = (path: string): { node: FormNode; index: number | null } | undefined => {
+    const [head, index, child] = path.split(".");
+    if (index === undefined) {
+      const node = model.topValues.get(head!);
+      return node && node.kind === "field" ? { node, index: null } : undefined;
+    }
+    const node = model.repeaterFields.get(head!)?.get(child ?? "");
+    return node ? { node, index: Number(index) } : undefined;
+  };
+
+  /**
+   * Evaluates a field condition. The submission holds exactly the non-null effective
+   * values, and absent paths resolve to null, so it serves as the rule data.
+   */
+  const conditionHolds = (path: string, property: "required" | "readOnly"): boolean => {
+    const target = fieldAt(path);
+    if (!target) return false;
+    const condition = (target.node.source as Field)[property] as Expression | undefined;
+    if (condition === undefined || typeof condition === "boolean") return condition === true;
+    const { submission } = state.evaluation;
+    const repeater = target.node.repeater;
+    const items =
+      repeater && Array.isArray(submission[repeater.key])
+        ? (submission[repeater.key] as JsonValue[])
+        : [];
+    const item = target.index !== null ? items[target.index] : undefined;
+    return (
+      evaluate(condition, {
+        data: submission as JsonObject,
+        scope: target.index !== null ? { $item: item ?? {}, $index: target.index } : {},
+        now: clock(),
+        timeZone: form.settings?.timeZone ?? "UTC",
+      }) === true
+    );
+  };
 
   const errorsVisible = (error: ValidationError) => {
     if (submitAttempted) return true;
@@ -280,6 +323,16 @@ export function createFormController(
     pageOf,
     isActive(path) {
       return !state.evaluation.inactive.includes(path);
+    },
+    isRequired(path) {
+      return conditionHolds(path, "required");
+    },
+    isReadOnly(path) {
+      const target = fieldAt(path);
+      return (
+        (target?.node.source as Field | undefined)?.calculate !== undefined ||
+        conditionHolds(path, "readOnly")
+      );
     },
   };
   return controller;
