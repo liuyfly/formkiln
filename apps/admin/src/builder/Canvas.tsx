@@ -5,6 +5,7 @@ import ArrowDownward from "@mui/icons-material/ArrowDownward";
 import ArrowUpward from "@mui/icons-material/ArrowUpward";
 import ContentCopy from "@mui/icons-material/ContentCopy";
 import DeleteOutlined from "@mui/icons-material/DeleteOutlined";
+import DragIndicator from "@mui/icons-material/DragIndicator";
 import DriveFileMove from "@mui/icons-material/DriveFileMove";
 import FormatIndentDecrease from "@mui/icons-material/FormatIndentDecrease";
 import FormatIndentIncrease from "@mui/icons-material/FormatIndentIncrease";
@@ -24,6 +25,7 @@ import Typography from "@mui/material/Typography";
 import type { Element, Text } from "@formkiln/spec";
 import { useState, type MouseEvent, type ReactNode } from "react";
 import { catalogEntry } from "./catalog";
+import { DropZone, useElementDrag, usePageDrop } from "./dnd";
 import { textIn } from "./inputs";
 import { useBuilder } from "./store";
 import { childrenOf, elementAt, isContainer, locOfPointer, sameLoc, type Loc } from "./tree";
@@ -160,6 +162,7 @@ function ElementCard({
     (element.type === "content" ? textIn(any.text as Text, locale).slice(0, 80) : "") ||
     element.key;
   const children = childrenOf(element);
+  const drag = useElementDrag(loc, readOnly);
   return (
     <Paper
       variant="outlined"
@@ -183,10 +186,34 @@ function ElementCard({
         borderColor: selected ? "primary.main" : problems ? "error.main" : "divider",
         borderWidth: selected ? 2 : 1,
         bgcolor: isContainer(element) ? "action.hover" : "background.paper",
+        opacity: drag.isDragging ? 0.4 : 1,
         "&:focus-visible": { outline: 2, outlineColor: "primary.main", outlineStyle: "solid" },
       }}
     >
       <Stack direction="row" spacing={1} sx={{ alignItems: "center", minHeight: 30 }}>
+        {!readOnly && (
+          <Box
+            ref={drag.setNodeRef}
+            {...drag.listeners}
+            {...drag.attributes}
+            aria-label={`Drag ${title}`}
+            onClick={(event) => event.stopPropagation()}
+            sx={{
+              display: "flex",
+              color: "text.secondary",
+              cursor: "grab",
+              touchAction: "none",
+              borderRadius: 1,
+              "&:focus-visible": {
+                outline: 2,
+                outlineStyle: "solid",
+                outlineColor: "primary.main",
+              },
+            }}
+          >
+            <DragIndicator fontSize="small" />
+          </Box>
+        )}
         <Box sx={{ minWidth: 0 }}>
           <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
             {title}
@@ -229,24 +256,73 @@ function ElementCard({
         <Box
           sx={{ mt: 1, pl: 1.5, borderLeft: 2, borderColor: "divider", display: "grid", gap: 1 }}
         >
-          {children.length === 0 ? (
-            <Typography variant="caption" color="text.secondary">
-              Empty. Select this {element.type === "repeater" ? "group" : "section"} and add fields
-              to put them inside.
-            </Typography>
-          ) : (
-            children.map((child, index) => (
-              <ElementCard
-                key={`${child.key}-${index}`}
-                element={child}
-                loc={{ page: loc.page, path: [...loc.path, index] }}
-                readOnly={readOnly}
-              />
-            ))
-          )}
+          <ElementList
+            elements={children}
+            page={loc.page}
+            parent={loc.path}
+            readOnly={readOnly}
+            emptyText={`Empty. Drag fields here, or select this ${element.type === "repeater" ? "group" : "section"} and add fields.`}
+          />
         </Box>
       )}
     </Paper>
+  );
+}
+
+/** Elements of one list with drop zones between them while dragging. */
+function ElementList({
+  elements,
+  page,
+  parent,
+  readOnly,
+  emptyText,
+}: {
+  elements: Element[];
+  page: number;
+  parent: number[];
+  readOnly: boolean;
+  emptyText: string;
+}) {
+  if (elements.length === 0) {
+    return (
+      <>
+        <DropZone slot={{ page, parent, index: 0 }} label="Drop here" />
+        <Typography variant="caption" color="text.secondary">
+          {emptyText}
+        </Typography>
+      </>
+    );
+  }
+  return (
+    <>
+      {elements.map((child, index) => (
+        <Box key={`${child.key}-${index}`} sx={{ display: "grid", gap: 1 }}>
+          <DropZone slot={{ page, parent, index }} />
+          <ElementCard
+            element={child}
+            loc={{ page, path: [...parent, index] }}
+            readOnly={readOnly}
+          />
+        </Box>
+      ))}
+      <DropZone slot={{ page, parent, index: elements.length }} />
+    </>
+  );
+}
+
+function PageTab({ index, label, ...props }: { index: number; label: string; value: number }) {
+  const { setNodeRef, isOver } = usePageDrop(index);
+  return (
+    <Tab
+      ref={setNodeRef}
+      {...props}
+      label={label}
+      sx={{
+        textTransform: "none",
+        bgcolor: isOver ? "action.selected" : undefined,
+        borderRadius: 1,
+      }}
+    />
   );
 }
 
@@ -269,11 +345,11 @@ function PageBar({ readOnly }: { readOnly: boolean }) {
         aria-label="Pages"
       >
         {pages.map((p, index) => (
-          <Tab
+          <PageTab
             key={`${p.key}-${index}`}
+            index={index}
             value={index}
             label={textIn(p.title, locale) || `Page ${index + 1}`}
-            sx={{ textTransform: "none" }}
           />
         ))}
       </Tabs>
@@ -345,30 +421,15 @@ export function Canvas({ readOnly }: { readOnly: boolean }) {
       </Button>
       <PageBar readOnly={readOnly} />
       <Stack spacing={1}>
-        {current && current.elements.length === 0 && (
-          <Box
-            sx={{
-              p: 4,
-              textAlign: "center",
-              border: 1,
-              borderStyle: "dashed",
-              borderColor: "divider",
-              borderRadius: 1,
-            }}
-          >
-            <Typography color="text.secondary">
-              This page is empty. Add fields from the left.
-            </Typography>
-          </Box>
-        )}
-        {current?.elements.map((element, index) => (
-          <ElementCard
-            key={`${element.key}-${index}`}
-            element={element}
-            loc={{ page, path: [index] }}
+        {current && (
+          <ElementList
+            elements={current.elements}
+            page={page}
+            parent={[]}
             readOnly={readOnly}
+            emptyText="This page is empty. Add fields from the left, or drag them here."
           />
-        ))}
+        )}
       </Stack>
     </Box>
   );

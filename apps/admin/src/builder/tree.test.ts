@@ -2,7 +2,10 @@ import type { Element, Field, FormDocument } from "@formkiln/spec";
 import { produce } from "immer";
 import { describe, expect, it } from "vitest";
 import {
+  canPlace,
   duplicate,
+  insertAt,
+  moveTo,
   elementAt,
   insertElement,
   locOfPointer,
@@ -120,5 +123,67 @@ describe("element tree", () => {
       "bCopy",
       "cCopy",
     ]);
+  });
+
+  it("moves to slots across lists with index adjustments", () => {
+    let loc;
+    // Same list, downwards: dropping before the third item lands as the second.
+    const down = produce(doc, (d) => {
+      loc = moveTo(d, { page: 0, path: [0] }, { page: 0, parent: [], index: 2 });
+    });
+    expect(loc).toEqual({ page: 0, path: [1] });
+    expect(down.pages[0]!.elements.map((e) => e.key)).toEqual(["box", "a", "pets"]);
+
+    // Into a later sibling container: the container's index shifts after removal.
+    const into = produce(doc, (d) => {
+      loc = moveTo(d, { page: 0, path: [0] }, { page: 0, parent: [1], index: 1 });
+    });
+    expect(loc).toEqual({ page: 0, path: [0, 1] });
+    expect(elementAt(into, { page: 0, path: [0, 1] })?.key).toBe("a");
+
+    // Out of a container to the page, and to another page.
+    const out = produce(doc, (d) => {
+      loc = moveTo(d, { page: 0, path: [1, 1] }, { page: 0, parent: [], index: 0 });
+    });
+    expect(loc).toEqual({ page: 0, path: [0] });
+    expect(out.pages[0]!.elements.map((e) => e.key)).toEqual(["c", "a", "box", "pets"]);
+    const other = produce(doc, (d) => {
+      loc = moveTo(d, { page: 0, path: [2] }, { page: 1, parent: [], index: 0 });
+    });
+    expect(loc).toEqual({ page: 1, path: [0] });
+    expect(other.pages[1]!.elements[0]!.key).toBe("pets");
+  });
+
+  it("refuses moves into itself and nested repeaters", () => {
+    let loc: unknown = "unset";
+    produce(doc, (d) => {
+      loc = moveTo(d, { page: 0, path: [1] }, { page: 0, parent: [1], index: 0 });
+    });
+    expect(loc).toBeNull();
+    const nested = produce(doc, (d) => {
+      d.pages[0]!.elements.push({
+        type: "panel",
+        key: "wrap",
+        elements: [{ type: "repeater", key: "r", label: "R", elements: [] }],
+      });
+    });
+    expect(
+      canPlace(nested, nested.pages[0]!.elements[3]!, { page: 0, parent: [2], index: 0 }),
+    ).toBe(false);
+    expect(canPlace(nested, text("x"), { page: 0, parent: [2], index: 0 })).toBe(true);
+    // Dropped onto its own position: unchanged.
+    produce(doc, (d) => {
+      loc = moveTo(d, { page: 0, path: [1] }, { page: 0, parent: [], index: 2 });
+    });
+    expect(loc).toEqual({ page: 0, path: [1] });
+  });
+
+  it("inserts new elements at slots", () => {
+    let loc;
+    const result = produce(doc, (d) => {
+      loc = insertAt(d, text("n"), { page: 0, parent: [2], index: 0 });
+    });
+    expect(loc).toEqual({ page: 0, path: [2, 0] });
+    expect(elementAt(result, { page: 0, path: [2, 0] })?.key).toBe("n");
   });
 });

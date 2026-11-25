@@ -191,3 +191,77 @@ export function duplicate(doc: FormDocument, element: Element): Element {
 export function newPage(doc: FormDocument): Page {
   return { key: uniqueKey(doc, `page${doc.pages.length + 1}`), elements: [] };
 }
+
+/** A position between elements: index `index` in the list of `parent` (empty = the page). */
+export interface Slot {
+  page: number;
+  parent: number[];
+  index: number;
+}
+
+function startsWith(path: number[], prefix: number[]): boolean {
+  return prefix.length <= path.length && prefix.every((v, i) => path[i] === v);
+}
+
+function containsRepeater(element: Element): boolean {
+  if (element.type === "repeater") return true;
+  return childrenOf(element)?.some(containsRepeater) ?? false;
+}
+
+/** The list a slot points into, or undefined when the slot is not a list. */
+function slotList(doc: FormDocument, slot: Slot): Element[] | undefined {
+  return slot.parent.length === 0
+    ? doc.pages[slot.page]?.elements
+    : childrenOf(elementAt(doc, { page: slot.page, path: slot.parent }));
+}
+
+/** Whether `element` may be put into the list of `slot` (no repeater inside a repeater). */
+export function canPlace(doc: FormDocument, element: Element, slot: Slot): boolean {
+  if (!slotList(doc, slot)) return false;
+  const insideRepeater =
+    slot.parent.length > 0 &&
+    hasRepeaterAncestorOrSelf(doc, { page: slot.page, path: slot.parent });
+  return !(insideRepeater && containsRepeater(element));
+}
+
+/** Inserts a new element at a slot. Returns its location, or null when not allowed. */
+export function insertAt(doc: FormDocument, element: Element, slot: Slot): Loc | null {
+  if (!canPlace(doc, element, slot)) return null;
+  const list = slotList(doc, slot)!;
+  const index = Math.min(Math.max(slot.index, 0), list.length);
+  list.splice(index, 0, element);
+  return { page: slot.page, path: [...slot.parent, index] };
+}
+
+/**
+ * Moves the element at `from` to a slot. Returns its new location, or null when the move is not
+ * allowed (into itself or a descendant, or a repeater into a repeater).
+ */
+export function moveTo(doc: FormDocument, from: Loc, slot: Slot): Loc | null {
+  const element = elementAt(doc, from);
+  if (!element) return null;
+  if (slot.page === from.page && startsWith(slot.parent, from.path)) return null;
+  if (!canPlace(doc, element, slot)) return null;
+  const target = { page: slot.page, parent: [...slot.parent], index: slot.index };
+  if (target.page === from.page) {
+    const depth = from.path.length - 1;
+    const fromParent = from.path.slice(0, -1);
+    const fromIndex = from.path[depth]!;
+    if (startsWith(target.parent, fromParent) && target.parent.length > depth) {
+      // The target list is inside a later sibling, whose index shifts down after removal.
+      if (target.parent[depth]! > fromIndex) target.parent[depth]! -= 1;
+    } else if (
+      target.parent.length === fromParent.length &&
+      startsWith(target.parent, fromParent)
+    ) {
+      // Same list: no-op when dropped onto its own position.
+      if (target.index === fromIndex || target.index === fromIndex + 1) return from;
+      if (target.index > fromIndex) target.index -= 1;
+    }
+  }
+  removeElement(doc, from);
+  const list = slotList(doc, target)!;
+  const index = Math.min(Math.max(target.index, 0), list.length);
+  list.splice(index, 0, element);
+  return { page: target.page, path: [...target.parent, index] };
+}
