@@ -26,8 +26,10 @@ import { KilnForm } from "@formkiln/react";
 - Replace the component of any field type with `components={{ text: MyTextField }}`. Components receive `FieldProps`.
 - Override interface strings with `messages`. English and Simplified Chinese are built in.
 - Theme with CSS custom properties such as `--fk-accent`, `--fk-radius` and `--fk-font`, set on `.fk-form` and `.fk-popover`.
+- File fields upload through the host: pass `uploadFile={(file, { field, path }) => Promise<FileRef>}`. Without it, file fields are disabled.
+- Content with `format: "markdown"` renders a safe subset (emphasis, links, lists). HTML is never interpreted.
 
-Name and address fields, file uploads, repeaters and Markdown content are coming next.
+Every field type of Form Schema v1 is supported, including name and address parts, repeaters with add and remove, and file uploads. Tests run axe-core on every page of the example form, including error states.
 
 ## License
 

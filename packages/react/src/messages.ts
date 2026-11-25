@@ -19,6 +19,20 @@ export interface Messages {
   selectPlaceholder: string;
   yes: string;
   no: string;
+  /** `{item}` is replaced by the repeater's item label. */
+  addItem: string;
+  /** `{item}` and `{index}` are replaced. */
+  itemHeading: string;
+  remove: string;
+  /** Accessible name of a remove button; `{item}` is the item heading or file name. */
+  removeItem: string;
+  chooseFile: string;
+  chooseFiles: string;
+  uploading: string;
+  uploadFailed: string;
+  uploadUnavailable: string;
+  nameParts: Record<"title" | "given" | "middle" | "family", string>;
+  addressParts: Record<"line1" | "line2" | "city" | "region" | "postalCode" | "country", string>;
   errors: Record<ErrorCode, string>;
 }
 
@@ -39,6 +53,24 @@ export const en: Messages = {
   selectPlaceholder: "Select an option",
   yes: "Yes",
   no: "No",
+  addItem: "Add {item}",
+  itemHeading: "{item} {index}",
+  remove: "Remove",
+  removeItem: "Remove {item}",
+  chooseFile: "Choose a file",
+  chooseFiles: "Choose files",
+  uploading: "Uploading {item}…",
+  uploadFailed: "{item} could not be uploaded. Please try again.",
+  uploadUnavailable: "File upload is not available here.",
+  nameParts: { title: "Title", given: "First name", middle: "Middle name", family: "Last name" },
+  addressParts: {
+    line1: "Address line 1",
+    line2: "Address line 2",
+    city: "Town or city",
+    region: "County or region",
+    postalCode: "Postcode",
+    country: "Country",
+  },
   errors: {
     required: "This field is required",
     type: "Enter a valid value",
@@ -80,6 +112,24 @@ export const zhCN: Messages = {
   selectPlaceholder: "请选择",
   yes: "是",
   no: "否",
+  addItem: "添加{item}",
+  itemHeading: "{item} {index}",
+  remove: "删除",
+  removeItem: "删除{item}",
+  chooseFile: "选择文件",
+  chooseFiles: "选择文件",
+  uploading: "正在上传 {item}…",
+  uploadFailed: "{item} 上传失败，请重试。",
+  uploadUnavailable: "此处暂不支持上传文件。",
+  nameParts: { title: "称谓", given: "名", middle: "中间名", family: "姓" },
+  addressParts: {
+    line1: "地址第 1 行",
+    line2: "地址第 2 行",
+    city: "城市",
+    region: "省/州",
+    postalCode: "邮编",
+    country: "国家/地区",
+  },
   errors: {
     required: "此项为必填项",
     type: "请输入有效的值",

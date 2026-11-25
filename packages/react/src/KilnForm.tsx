@@ -4,18 +4,21 @@ import type {
   Element,
   Field,
   FormDocument,
+  ItemElement,
   JsonValue,
   Page,
   PanelElement,
+  RepeaterElement,
   Text,
   ValidationError,
 } from "@formkiln/spec";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button, I18nProvider } from "react-aria-components";
 import { defaultComponents } from "./fields/fields";
+import { Markdown } from "./markdown";
 import { defaultMessages, errorText, format, type Messages } from "./messages";
 import { resolveText } from "./text";
-import type { FieldComponents } from "./types";
+import type { FieldComponents, UploadFile } from "./types";
 import { useFormState, useKilnForm } from "./useKilnForm";
 
 export interface KilnFormProps {
@@ -36,6 +39,8 @@ export interface KilnFormProps {
   onValidationError?: (errors: ValidationError[]) => void;
   /** Called with the submission and outcome of a valid form. Throw to report a failure. */
   onSubmit?: SubmitHandler;
+  /** Uploads a file and returns its reference. File fields are disabled without it. */
+  uploadFile?: UploadFile;
   /** Replace the components of some field types. */
   components?: FieldComponents;
   /** Override some or all user interface strings. */
@@ -48,8 +53,9 @@ export interface KilnFormProps {
 const domId = (formKey: string, path: string) =>
   `fk-${formKey}-${path.replace(/[^A-Za-z0-9_-]/g, "-")}`;
 
-const FOCUSABLE =
-  'input, textarea, select, button, [role="spinbutton"], [tabindex]:not([tabindex="-1"])';
+/** Inputs are preferred over buttons, so a new repeater item focuses its first field. */
+const INPUTS = 'input:not([type="file"]), textarea, select, [role="spinbutton"], [role="radio"]';
+const FOCUSABLE = 'button, [tabindex]:not([tabindex="-1"])';
 
 /** Renders a Formkiln form and runs its session. */
 export function KilnForm(props: KilnFormProps) {
@@ -72,6 +78,7 @@ export function KilnForm(props: KilnFormProps) {
   const [showSummary, setShowSummary] = useState(false);
   const [submitError, setSubmitError] = useState(false);
   const [focusTarget, setFocusTarget] = useState<"summary" | "page" | null>(null);
+  const [pendingFocus, setPendingFocus] = useState<string | null>(null);
 
   // Callbacks for answer and page changes, skipping the initial render.
   const previous = useRef({ answers: state.answers, page: state.currentPage });
@@ -97,7 +104,9 @@ export function KilnForm(props: KilnFormProps) {
     let current = path;
     for (;;) {
       const container = rootRef.current?.querySelector(`[data-fk-path="${CSS.escape(current)}"]`);
-      const target = container?.querySelector<HTMLElement>(FOCUSABLE);
+      const target =
+        container?.querySelector<HTMLElement>(INPUTS) ??
+        container?.querySelector<HTMLElement>(FOCUSABLE);
       if (target) {
         target.focus();
         return;
@@ -107,6 +116,12 @@ export function KilnForm(props: KilnFormProps) {
       current = current.slice(0, cut);
     }
   };
+
+  useEffect(() => {
+    if (pendingFocus === null) return;
+    focusField(pendingFocus);
+    setPendingFocus(null);
+  });
 
   const blocked = (errors: ValidationError[]) => {
     setShowSummary(true);
@@ -153,7 +168,17 @@ export function KilnForm(props: KilnFormProps) {
   );
   const pageIndex = state.pages.indexOf(state.currentPage);
 
-  const renderElement = (element: Element, path: string): ReactNode => {
+  const valueAt = (path: string): JsonValue => {
+    const [head, index, child] = path.split(".");
+    if (index === undefined) return state.answers[head!] ?? null;
+    const items = state.answers[head!];
+    const item = Array.isArray(items) ? items[Number(index)] : undefined;
+    return item && typeof item === "object" && !Array.isArray(item) ? (item[child!] ?? null) : null;
+  };
+
+  /** Renders an element; `prefix` is `""` at the top level and `repeater.index.` inside items. */
+  const renderElement = (element: Element | ItemElement, prefix: string): ReactNode => {
+    const path = prefix + element.key;
     if (!controller.isActive(path)) return null;
     switch (element.type) {
       case "content":
@@ -164,19 +189,75 @@ export function KilnForm(props: KilnFormProps) {
             key={path}
             element={element}
             text={text}
-            renderChild={(child) => renderElement(child, child.key)}
+            renderChild={(child) => renderElement(child, prefix)}
           />
         );
       case "repeater":
-        return (
-          <div key={path} className="fk-field fk-unsupported" data-fk-path={path} role="note">
-            <span className="fk-label">{text(element.label)}</span>
-            <p>{messages.unsupported}</p>
-          </div>
-        );
+        return renderRepeater(element, path);
       default:
         return renderField(element, path);
     }
+  };
+
+  const renderRepeater = (element: RepeaterElement, path: string): ReactNode => {
+    const items = Array.isArray(state.answers[path]) ? (state.answers[path] as JsonValue[]) : [];
+    const id = domId(form.key, path);
+    const ownErrors = controller.errorsAt(path).filter((error) => error.path === path);
+    const itemLabel = text(element.itemLabel) ?? text(element.label) ?? element.key;
+    const full = element.maxItems !== undefined && items.length >= element.maxItems;
+    return (
+      <fieldset
+        key={path}
+        className="fk-repeater"
+        data-fk-path={path}
+        data-invalid={ownErrors.length > 0 || undefined}
+        {...(ownErrors.length > 0 && { "aria-describedby": `${id}-error` })}
+      >
+        <legend className="fk-label">{text(element.label)}</legend>
+        {text(element.description) && <p className="fk-description">{text(element.description)}</p>}
+        {ownErrors.length > 0 && (
+          <div id={`${id}-error`} className="fk-error">
+            {ownErrors.map((error) => errorText(error, messages)).join(" ")}
+          </div>
+        )}
+        {items.map((_, index) => {
+          const heading = format(messages.itemHeading, { item: itemLabel, index: index + 1 });
+          return (
+            <div
+              key={index}
+              className="fk-repeater-item"
+              role="group"
+              aria-labelledby={`${id}-${index}-title`}
+              data-fk-path={`${path}.${index}`}
+            >
+              <div className="fk-repeater-item-header">
+                <h3 id={`${id}-${index}-title`} className="fk-repeater-item-title">
+                  {heading}
+                </h3>
+                <Button
+                  className="fk-button fk-button-link"
+                  aria-label={format(messages.removeItem, { item: heading })}
+                  onPress={() => controller.removeItem(path, index)}
+                >
+                  {messages.remove}
+                </Button>
+              </div>
+              {element.elements.map((child) => renderElement(child, `${path}.${index}.`))}
+            </div>
+          );
+        })}
+        <Button
+          className="fk-button fk-button-secondary"
+          isDisabled={full}
+          onPress={() => {
+            controller.addItem(path);
+            setPendingFocus(`${path}.${items.length}`);
+          }}
+        >
+          {format(messages.addItem, { item: itemLabel })}
+        </Button>
+      </fieldset>
+    );
   };
 
   const renderField = (field: Field, path: string): ReactNode => {
@@ -192,29 +273,49 @@ export function KilnForm(props: KilnFormProps) {
           label={text(field.label) ?? field.key}
           description={text(field.description)}
           placeholder={"placeholder" in field ? text(field.placeholder) : undefined}
-          value={state.answers[path] ?? null}
+          value={valueAt(path)}
           onChange={(value) => controller.setValue(path, value)}
           onBlur={() => controller.touch(path)}
           errorMessages={errors.map((error) => errorText(error, messages))}
+          fieldErrorMessages={errors
+            .filter((error) => error.path === path)
+            .map((error) => errorText(error, messages))}
+          errorsAt={(member) =>
+            errors
+              .filter((error) => error.path === `${path}.${member}`)
+              .map((error) => errorText(error, messages))
+          }
           isInvalid={errors.length > 0}
           isRequired={controller.isRequired(path)}
           isReadOnly={controller.isReadOnly(path)}
           locale={locale}
           messages={messages}
           text={text}
+          {...(props.uploadFile && { uploadFile: props.uploadFile })}
         />
       </div>
     );
   };
 
+  const allElements = form.pages.flatMap(function collect(
+    node: Page | Element | ItemElement,
+  ): (Element | ItemElement)[] {
+    const children = "elements" in node ? (node.elements as (Element | ItemElement)[]) : [];
+    return [...("type" in node ? [node] : []), ...children.flatMap(collect)];
+  });
+
   const labelOf = (path: string) => {
-    const field = form.pages
-      .flatMap(function collect(node: Page | Element): Element[] {
-        const children = "elements" in node ? (node.elements as Element[]) : [];
-        return [...(("type" in node ? [node] : []) as Element[]), ...children.flatMap(collect)];
-      })
-      .find((element) => element.key === path.split(".")[0]);
-    return field && "label" in field ? text(field.label) : undefined;
+    const [head, index, child] = path.split(".");
+    const top = allElements.find((element) => element.key === head);
+    if (top?.type === "repeater" && child !== undefined) {
+      const inner = allElements.find(
+        (element) => element.key === child && "label" in element && element !== top,
+      );
+      const itemLabel = text(top.itemLabel) ?? text(top.label) ?? top.key;
+      const heading = format(messages.itemHeading, { item: itemLabel, index: Number(index) + 1 });
+      return [heading, inner && "label" in inner ? text(inner.label) : child].join(" – ");
+    }
+    return top && "label" in top ? text(top.label) : undefined;
   };
 
   return (
@@ -271,7 +372,7 @@ export function KilnForm(props: KilnFormProps) {
               {text(page.description) && (
                 <p className="fk-page-description">{text(page.description)}</p>
               )}
-              {page.elements.map((element) => renderElement(element, element.key))}
+              {page.elements.map((element) => renderElement(element, ""))}
             </section>
           ))}
           {submitError && (
@@ -310,10 +411,17 @@ function Content({
   element: ContentElement;
   text: (value: Text | undefined) => string | undefined;
 }) {
-  const paragraphs = (text(element.text) ?? "").split(/\n{2,}/);
+  const source = text(element.text) ?? "";
+  if (element.format === "markdown") {
+    return (
+      <div className="fk-content">
+        <Markdown source={source} />
+      </div>
+    );
+  }
   return (
     <div className="fk-content">
-      {paragraphs.map((paragraph, i) => (
+      {source.split(/\n{2,}/).map((paragraph, i) => (
         <p key={i}>{paragraph}</p>
       ))}
     </div>
@@ -325,16 +433,16 @@ function Panel({
   text,
   renderChild,
 }: {
-  element: PanelElement;
+  element: PanelElement<Element> | PanelElement<ItemElement>;
   text: (value: Text | undefined) => string | undefined;
-  renderChild: (child: Element) => ReactNode;
+  renderChild: (child: Element | ItemElement) => ReactNode;
 }) {
   const title = text(element.title);
   return (
     <fieldset className="fk-panel">
       {title && <legend className="fk-panel-title">{title}</legend>}
       {text(element.description) && <p className="fk-description">{text(element.description)}</p>}
-      {element.elements.map(renderChild)}
+      {(element.elements as (Element | ItemElement)[]).map(renderChild)}
     </fieldset>
   );
 }
