@@ -16,14 +16,17 @@ async function forward(request: Request): Promise<Response> {
   if (!isAllowedPath(url.pathname)) {
     return Response.json({ status: 404, title: "Not found" }, { status: 404 });
   }
-  const hasBody = request.method !== "GET" && request.method !== "HEAD";
+  // Buffered: admin request bodies are small JSON documents, and streaming an empty body (a
+  // bodiless POST or DELETE, such as sign-out) makes fetch fail.
+  const body =
+    request.method === "GET" || request.method === "HEAD" ? null : await request.arrayBuffer();
   const upstream = await fetch(`${API_URL}${url.pathname}${url.search}`, {
     method: request.method,
     headers: upstreamRequestHeaders(request),
-    ...(hasBody && { body: request.body, duplex: "half" }),
+    ...(body && body.byteLength > 0 && { body }),
     cache: "no-store",
     redirect: "manual",
-  } as RequestInit);
+  });
   const headers = downstreamResponseHeaders(upstream);
   const cleanup = staleCookieCleanup(request.headers.get("cookie"));
   if (cleanup) headers.append("set-cookie", cleanup);
