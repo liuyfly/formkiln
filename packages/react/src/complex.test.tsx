@@ -92,6 +92,32 @@ describe("invalid styling", () => {
   });
 });
 
+describe("date picker", () => {
+  it("jumps to a year and month from the calendar header", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    render(
+      <KilnForm
+        form={page([{ type: "date", key: "dateOfBirth", label: "Date of birth", required: true }])}
+        onSubmit={onSubmit}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /Choose a date/ }));
+    const dialog = await screen.findByRole("dialog");
+    const [month, year] = within(dialog).getAllByRole("combobox") as HTMLSelectElement[];
+    await user.selectOptions(year!, "1990");
+    await user.selectOptions(month!, "4");
+    await user.click(
+      within(dialog).getByRole("button", { name: /21.*April.*1990|April 21, 1990/ }),
+    );
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+    expect(onSubmit).toHaveBeenCalledWith({
+      submission: { dateOfBirth: "1990-04-21" },
+      outcome: null,
+    });
+  });
+});
+
 describe("repeaters", () => {
   const form = page([
     {

@@ -13,6 +13,8 @@ import {
   Calendar,
   CalendarCell,
   CalendarGrid,
+  CalendarMonthPicker,
+  CalendarYearPicker,
   Checkbox,
   CheckboxGroup,
   DateInput,
@@ -37,6 +39,7 @@ import {
   TextArea,
   TextField,
   TimeField,
+  type Key,
 } from "react-aria-components";
 import type { FieldComponent, FieldComponents, FieldProps } from "../types";
 import { CompositeField, FileField } from "./complex";
@@ -341,21 +344,65 @@ function safeParse<T>(parse: (value: string) => T, value: JsonValue): T | null {
   }
 }
 
+function CalendarSelect({
+  label,
+  value,
+  onChange,
+  items,
+}: {
+  label: string;
+  value: Key;
+  onChange: (key: Key | null) => void;
+  items: { id: number; formatted: string }[];
+}) {
+  return (
+    <select
+      className="fk-calendar-select"
+      aria-label={label}
+      value={String(value)}
+      onChange={(event) => onChange(Number(event.target.value))}
+    >
+      {items.map((item) => (
+        <option key={item.id} value={item.id}>
+          {item.formatted}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+/** Calendar with month and year pickers, so distant dates (birth dates) are quick to reach. */
 function CalendarPopover({ props }: { props: FieldProps }) {
   return (
-    <Popover className="fk-popover">
+    <Popover className="fk-popover" placement="bottom end" offset={6}>
       <Dialog className="fk-dialog">
         <Calendar className="fk-calendar">
           <header className="fk-calendar-header">
-            <Button slot="previous" aria-label={props.messages.previousMonth}>
+            <Button
+              slot="previous"
+              className="fk-calendar-nav"
+              aria-label={props.messages.previousMonth}
+            >
               ‹
             </Button>
-            <Heading />
-            <Button slot="next" aria-label={props.messages.nextMonth}>
+            <div className="fk-calendar-pickers">
+              <CalendarMonthPicker format="long">
+                {({ "aria-label": label, value, onChange, items }) => (
+                  <CalendarSelect label={label} value={value} onChange={onChange} items={items} />
+                )}
+              </CalendarMonthPicker>
+              <CalendarYearPicker visibleYears={101}>
+                {({ "aria-label": label, value, onChange, items }) => (
+                  <CalendarSelect label={label} value={value} onChange={onChange} items={items} />
+                )}
+              </CalendarYearPicker>
+            </div>
+            <Button slot="next" className="fk-calendar-nav" aria-label={props.messages.nextMonth}>
               ›
             </Button>
           </header>
-          <CalendarGrid>
+          <Heading className="fk-visually-hidden" />
+          <CalendarGrid className="fk-calendar-grid">
             {(date) => <CalendarCell date={date} className="fk-calendar-cell" />}
           </CalendarGrid>
         </Calendar>
