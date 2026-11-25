@@ -162,8 +162,58 @@ describe("repeaters", () => {
     await user.click(screen.getByRole("button", { name: "Remove Address 1" }));
     await user.click(screen.getByRole("button", { name: "Submit" }));
     expect((await screen.findByRole("alert")).textContent).toContain(
-      "Previous addresses: Select or add at least 1",
+      "Previous addresses: Add at least 1 using “Add Address”",
     );
+  });
+});
+
+describe("item-count messages", () => {
+  const form = page([
+    {
+      type: "checkboxes",
+      key: "pets",
+      label: "Pets",
+      options: [
+        { value: "cat", label: "Cat" },
+        { value: "dog", label: "Dog" },
+        { value: "fish", label: "Fish" },
+      ],
+      validators: [
+        { type: "minItems", value: 2 },
+        { type: "maxItems", value: 1 },
+      ],
+    },
+    {
+      type: "repeater",
+      key: "rooms",
+      label: "Rooms",
+      itemLabel: "Room",
+      minItems: 1,
+      elements: [{ type: "text", key: "name", label: "Name" }],
+    },
+  ]);
+
+  it("names the action and pluralises by element kind", async () => {
+    const user = userEvent.setup();
+    render(<KilnForm form={form} initialAnswers={{ pets: ["cat"] }} />);
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+    const items = [...(await screen.findByRole("alert")).querySelectorAll("li")].map(
+      (li) => li.textContent,
+    );
+    expect(items).toEqual([
+      "Pets: Select at least 2 options",
+      "Rooms: Add at least 1 using “Add Room”",
+    ]);
+  });
+
+  it("localises the count messages", async () => {
+    const user = userEvent.setup();
+    render(<KilnForm form={form} locale="zh-CN" initialAnswers={{ pets: ["cat", "dog"] }} />);
+    await user.click(screen.getByRole("button", { name: "提交" }));
+    const items = [...(await screen.findByRole("alert")).querySelectorAll("li")].map(
+      (li) => li.textContent,
+    );
+    expect(items).toEqual(["Pets: 最多选择 1 项", "Rooms: 请至少添加 1 项（点击“添加Room”）"]);
   });
 });
 

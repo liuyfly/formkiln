@@ -34,6 +34,20 @@ export interface Messages {
   nameParts: Record<"title" | "given" | "middle" | "family", string>;
   addressParts: Record<"line1" | "line2" | "city" | "region" | "postalCode" | "country", string>;
   errors: Record<ErrorCode, string>;
+  /**
+   * Item-count messages by element kind, replacing the generic `minItems` / `maxItems` text.
+   * `{value}` is the limit; `{action}` (repeaters) is the label of the add button.
+   */
+  counts: Record<
+    "repeaterMin" | "repeaterMax" | "checkboxesMin" | "checkboxesMax" | "fileMin" | "fileMax",
+    Plural
+  >;
+}
+
+/** Plural forms, chosen with Intl.PluralRules ("one" or "other"). */
+export interface Plural {
+  one: string;
+  other: string;
 }
 
 export const en: Messages = {
@@ -92,6 +106,29 @@ export const en: Messages = {
     fileType: "This file type is not allowed",
     equals: "Enter the expected value",
     expression: "Enter a valid value",
+  },
+  counts: {
+    repeaterMin: {
+      one: "Add at least {value} using “{action}”",
+      other: "Add at least {value} using “{action}”",
+    },
+    repeaterMax: {
+      one: "You can add only {value}. Remove the extra ones.",
+      other: "You can add up to {value}. Remove the extra ones.",
+    },
+    checkboxesMin: {
+      one: "Select at least {value} option",
+      other: "Select at least {value} options",
+    },
+    checkboxesMax: {
+      one: "Select no more than {value} option",
+      other: "Select no more than {value} options",
+    },
+    fileMin: { one: "Upload at least {value} file", other: "Upload at least {value} files" },
+    fileMax: {
+      one: "Upload no more than {value} file",
+      other: "Upload no more than {value} files",
+    },
   },
 };
 
@@ -152,6 +189,20 @@ export const zhCN: Messages = {
     equals: "请输入符合要求的值",
     expression: "请输入有效的值",
   },
+  counts: {
+    repeaterMin: {
+      one: "请至少添加 {value} 项（点击“{action}”）",
+      other: "请至少添加 {value} 项（点击“{action}”）",
+    },
+    repeaterMax: {
+      one: "最多只能添加 {value} 项，请删除多余的项",
+      other: "最多只能添加 {value} 项，请删除多余的项",
+    },
+    checkboxesMin: { one: "请至少选择 {value} 项", other: "请至少选择 {value} 项" },
+    checkboxesMax: { one: "最多选择 {value} 项", other: "最多选择 {value} 项" },
+    fileMin: { one: "请至少上传 {value} 个文件", other: "请至少上传 {value} 个文件" },
+    fileMax: { one: "最多上传 {value} 个文件", other: "最多上传 {value} 个文件" },
+  },
 };
 
 /** Built-in messages for a locale (by language), falling back to English. */
@@ -172,10 +223,41 @@ const display = (value: JsonValue | undefined): string =>
       ? ""
       : String(value);
 
+/** Where an error occurred, to pick a more specific message. */
+export interface ErrorContext {
+  /** The element type at the error path, for example `repeater`, `checkboxes` or `file`. */
+  kind?: string | undefined;
+  /** For repeaters: the label of the add button. */
+  action?: string | undefined;
+  /** Locale for plural rules. */
+  locale?: string | undefined;
+}
+
+const COUNT_KEYS: Record<string, Record<"minItems" | "maxItems", keyof Messages["counts"]>> = {
+  repeater: { minItems: "repeaterMin", maxItems: "repeaterMax" },
+  checkboxes: { minItems: "checkboxesMin", maxItems: "checkboxesMax" },
+  file: { minItems: "fileMin", maxItems: "fileMax" },
+};
+
 /** The text to show for an error: the form's custom message, or the localised default. */
-export function errorText(error: ValidationError, messages: Messages): string {
+export function errorText(
+  error: ValidationError,
+  messages: Messages,
+  context: ErrorContext = {},
+): string {
   if (error.message !== undefined) return error.message;
-  return format(messages.errors[error.code] ?? messages.errors.type, {
-    value: display(error.params?.value),
-  });
+  const value = display(error.params?.value);
+  if (
+    (error.code === "minItems" || error.code === "maxItems") &&
+    context.kind &&
+    COUNT_KEYS[context.kind]
+  ) {
+    const plural = messages.counts[COUNT_KEYS[context.kind]![error.code]];
+    const category = new Intl.PluralRules(context.locale ?? "en").select(Number(value));
+    return format(category === "one" ? plural.one : plural.other, {
+      value,
+      action: context.action ?? "",
+    });
+  }
+  return format(messages.errors[error.code] ?? messages.errors.type, { value });
 }
