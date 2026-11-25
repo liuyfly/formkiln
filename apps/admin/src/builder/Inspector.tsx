@@ -15,7 +15,10 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import type { Element, FormDocument, Option, Outcome, Text, Validator } from "@formkiln/spec";
 import type { Draft } from "immer";
+import { useMemo } from "react";
 import { catalogEntry, validatorTypesFor } from "./catalog";
+import { ConditionEditor } from "./ConditionEditor";
+import { referenceableFields } from "./logic";
 import { JsonInput, LocalizedText, NumberInput, SectionTitle, Toggle, textIn } from "./inputs";
 import { useBuilder } from "./store";
 import { elementAt, type Loc } from "./tree";
@@ -34,6 +37,14 @@ function useLocales() {
   const settings = useBuilder((state) => state.document.settings);
   const defaultLocale = settings?.defaultLocale ?? "en";
   return { defaultLocale, locales: settings?.locales?.length ? settings.locales : [defaultLocale] };
+}
+
+/** Fields a condition at `loc` (null: form level) can reference; follows edits. */
+function useFieldRefs(loc: Loc | null) {
+  const document = useBuilder((state) => state.document);
+  const key = loc ? `${loc.page}.${loc.path.join(".")}` : "";
+  // `key` identifies `loc` (a new object on every render).
+  return useMemo(() => referenceableFields(document, loc), [document, key]);
 }
 
 function KeyInput({
@@ -61,51 +72,6 @@ function KeyInput({
       }
       slotProps={{ htmlInput: { spellCheck: false, style: { fontFamily: "monospace" } } }}
     />
-  );
-}
-
-/** A condition: always / never / an expression (edited as JSON until the logic editor). */
-function ConditionInput({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: unknown;
-  onChange: (value: unknown) => void;
-}) {
-  const mode =
-    value === undefined || value === false ? "no" : value === true ? "yes" : "expression";
-  return (
-    <Box sx={{ display: "grid", gap: 1 }}>
-      <TextField
-        size="small"
-        select
-        label={label}
-        value={mode}
-        onChange={(event) =>
-          onChange(
-            event.target.value === "no"
-              ? undefined
-              : event.target.value === "yes"
-                ? true
-                : { "==": [{ var: "" }, ""] },
-          )
-        }
-      >
-        <MenuItem value="no">No</MenuItem>
-        <MenuItem value="yes">Yes</MenuItem>
-        <MenuItem value="expression">When a condition is true</MenuItem>
-      </TextField>
-      {mode === "expression" && (
-        <JsonInput
-          label={`${label}: condition (JSON Logic)`}
-          value={value}
-          onChange={onChange}
-          helperText="A visual editor follows."
-        />
-      )}
-    </Box>
   );
 }
 
@@ -357,6 +323,7 @@ function ElementInspector({ loc, element }: { loc: Loc; element: Element }) {
   const { locales, defaultLocale } = useLocales();
   const any = element as unknown as Any;
   const id = `${loc.page}.${loc.path.join(".")}`;
+  const fields = useFieldRefs(loc);
   const update = (property: string, value: unknown, coalesce = true) =>
     edit(
       (draft: Draft<FormDocument>) => {
@@ -557,10 +524,13 @@ function ElementInspector({ loc, element }: { loc: Loc; element: Element }) {
 
           <SectionTitle>Rules</SectionTitle>
           {type !== "hidden" && (
-            <ConditionInput
+            <ConditionEditor
+              kind="required"
               label="Required"
               value={any.required}
-              onChange={(v) => update("required", v, false)}
+              onChange={(v) => update("required", v)}
+              fields={fields}
+              locale={defaultLocale}
             />
           )}
           <Toggle
@@ -580,11 +550,13 @@ function ElementInspector({ loc, element }: { loc: Loc; element: Element }) {
       )}
 
       <SectionTitle>Visibility</SectionTitle>
-      <JsonInput
-        label="Show only when (JSON Logic, optional)"
+      <ConditionEditor
+        kind="visible"
+        label="Visibility"
         value={any.visible}
         onChange={(v) => update("visible", v)}
-        helperText="Empty: always shown. A visual editor follows."
+        fields={fields}
+        locale={defaultLocale}
       />
     </Stack>
   );
@@ -592,6 +564,7 @@ function ElementInspector({ loc, element }: { loc: Loc; element: Element }) {
 
 function PageInspector({ page }: { page: number }) {
   const edit = useBuilder((state) => state.edit);
+  const formFields = useFieldRefs(null);
   const current = useBuilder((state) => state.document.pages[page]);
   const { locales, defaultLocale } = useLocales();
   if (!current) return null;
@@ -625,10 +598,13 @@ function PageInspector({ page }: { page: number }) {
         defaultLocale={defaultLocale}
         multiline
       />
-      <JsonInput
-        label="Show only when (JSON Logic, optional)"
+      <ConditionEditor
+        kind="visible"
+        label="Visibility"
         value={current.visible}
         onChange={(v) => update("visible", v)}
+        fields={formFields}
+        locale={defaultLocale}
       />
     </Stack>
   );
@@ -636,6 +612,7 @@ function PageInspector({ page }: { page: number }) {
 
 function OutcomesEditor() {
   const edit = useBuilder((state) => state.edit);
+  const formFields = useFieldRefs(null);
   const outcomes = useBuilder((state) => state.document.submit?.outcomes) ?? [];
   const { locales, defaultLocale } = useLocales();
   const update = (index: number, property: string, value: unknown) =>
@@ -696,10 +673,13 @@ function OutcomesEditor() {
             value={outcome.redirect ?? ""}
             onChange={(event) => update(index, "redirect", event.target.value || undefined)}
           />
-          <JsonInput
-            label="When (JSON Logic, optional)"
+          <ConditionEditor
+            kind="when"
+            label="Chosen"
             value={outcome.when}
             onChange={(v) => update(index, "when", v)}
+            fields={formFields}
+            locale={defaultLocale}
           />
         </Box>
       ))}
