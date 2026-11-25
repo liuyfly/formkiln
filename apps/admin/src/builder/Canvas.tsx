@@ -335,6 +335,8 @@ function PageBar({ readOnly }: { readOnly: boolean }) {
   return (
     <Stack
       direction="row"
+      // Page tabs and actions handle their own clicks; the canvas click (select the page) would undo a tab switch.
+      onClick={(event) => event.stopPropagation()}
       sx={{ alignItems: "center", borderBottom: 1, borderColor: "divider", mb: 2 }}
     >
       <Tabs
