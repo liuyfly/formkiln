@@ -35,6 +35,33 @@ describe("composite fields", () => {
     });
   });
 
+  it("reveals part errors only when focus leaves the whole field", async () => {
+    const user = userEvent.setup();
+    render(
+      <KilnForm
+        form={page([
+          {
+            type: "name",
+            key: "fullName",
+            label: "Full name",
+            parts: ["title", "given", "family"],
+            required: true,
+          },
+          { type: "text", key: "email", label: "Email" },
+        ])}
+      />,
+    );
+    await user.type(screen.getByRole("textbox", { name: "Title" }), "CEO");
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "First name" }));
+    expect(screen.queryByText("This field is required")).toBeNull();
+
+    await user.tab();
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: /Email/ }));
+    expect(screen.getAllByText("This field is required")).toHaveLength(2);
+  });
+
   it("shows a member error next to the member input", async () => {
     const user = userEvent.setup();
     render(<KilnForm form={form} />);
@@ -92,6 +119,32 @@ describe("invalid styling", () => {
   });
 });
 
+describe("date picker", () => {
+  it("jumps to a year and month from the calendar header", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    render(
+      <KilnForm
+        form={page([{ type: "date", key: "dateOfBirth", label: "Date of birth", required: true }])}
+        onSubmit={onSubmit}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /Choose a date/ }));
+    const dialog = await screen.findByRole("dialog");
+    const [month, year] = within(dialog).getAllByRole("combobox") as HTMLSelectElement[];
+    await user.selectOptions(year!, "1990");
+    await user.selectOptions(month!, "4");
+    await user.click(
+      within(dialog).getByRole("button", { name: /21.*April.*1990|April 21, 1990/ }),
+    );
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+    expect(onSubmit).toHaveBeenCalledWith({
+      submission: { dateOfBirth: "1990-04-21" },
+      outcome: null,
+    });
+  });
+});
+
 describe("repeaters", () => {
   const form = page([
     {
@@ -136,8 +189,58 @@ describe("repeaters", () => {
     await user.click(screen.getByRole("button", { name: "Remove Address 1" }));
     await user.click(screen.getByRole("button", { name: "Submit" }));
     expect((await screen.findByRole("alert")).textContent).toContain(
-      "Previous addresses: Select or add at least 1",
+      "Previous addresses: Add at least 1 using “Add Address”",
     );
+  });
+});
+
+describe("item-count messages", () => {
+  const form = page([
+    {
+      type: "checkboxes",
+      key: "pets",
+      label: "Pets",
+      options: [
+        { value: "cat", label: "Cat" },
+        { value: "dog", label: "Dog" },
+        { value: "fish", label: "Fish" },
+      ],
+      validators: [
+        { type: "minItems", value: 2 },
+        { type: "maxItems", value: 1 },
+      ],
+    },
+    {
+      type: "repeater",
+      key: "rooms",
+      label: "Rooms",
+      itemLabel: "Room",
+      minItems: 1,
+      elements: [{ type: "text", key: "name", label: "Name" }],
+    },
+  ]);
+
+  it("names the action and pluralises by element kind", async () => {
+    const user = userEvent.setup();
+    render(<KilnForm form={form} initialAnswers={{ pets: ["cat"] }} />);
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+    const items = [...(await screen.findByRole("alert")).querySelectorAll("li")].map(
+      (li) => li.textContent,
+    );
+    expect(items).toEqual([
+      "Pets: Select at least 2 options",
+      "Rooms: Add at least 1 using “Add Room”",
+    ]);
+  });
+
+  it("localises the count messages", async () => {
+    const user = userEvent.setup();
+    render(<KilnForm form={form} locale="zh-CN" initialAnswers={{ pets: ["cat", "dog"] }} />);
+    await user.click(screen.getByRole("button", { name: "提交" }));
+    const items = [...(await screen.findByRole("alert")).querySelectorAll("li")].map(
+      (li) => li.textContent,
+    );
+    expect(items).toEqual(["Pets: 最多选择 1 项", "Rooms: 请至少添加 1 项（点击“添加Room”）"]);
   });
 });
 

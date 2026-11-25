@@ -73,6 +73,31 @@ export function KilnForm(props: KilnFormProps) {
   const text = (value: Text | undefined) => resolveText(value, locale, form);
   const single = form.settings?.navigation === "single";
 
+  const allElements = form.pages.flatMap(function collect(
+    node: Page | Element | ItemElement,
+  ): (Element | ItemElement)[] {
+    const children = "elements" in node ? (node.elements as (Element | ItemElement)[]) : [];
+    return [...("type" in node ? [node] : []), ...children.flatMap(collect)];
+  });
+
+  /** The element kind at an error path, so count errors get a specific message. */
+  const describeError = (error: ValidationError) => {
+    const [head, , child] = error.path.split(".");
+    const top = allElements.find((element) => element.key === head);
+    let kind: string | undefined = top?.type;
+    let action: string | undefined;
+    if (top?.type === "repeater") {
+      if (child === undefined) {
+        action = format(messages.addItem, {
+          item: text(top.itemLabel) ?? text(top.label) ?? top.key,
+        });
+      } else {
+        kind = allElements.find((element) => element.key === child && element !== top)?.type;
+      }
+    }
+    return errorText(error, messages, { kind, action, locale });
+  };
+
   const rootRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
   const [showSummary, setShowSummary] = useState(false);
@@ -217,7 +242,7 @@ export function KilnForm(props: KilnFormProps) {
         {text(element.description) && <p className="fk-description">{text(element.description)}</p>}
         {ownErrors.length > 0 && (
           <div id={`${id}-error`} className="fk-error">
-            {ownErrors.map((error) => errorText(error, messages)).join(" ")}
+            {ownErrors.map((error) => describeError(error)).join(" ")}
           </div>
         )}
         {items.map((_, index) => {
@@ -276,14 +301,14 @@ export function KilnForm(props: KilnFormProps) {
           value={valueAt(path)}
           onChange={(value) => controller.setValue(path, value)}
           onBlur={() => controller.touch(path)}
-          errorMessages={errors.map((error) => errorText(error, messages))}
+          errorMessages={errors.map((error) => describeError(error))}
           fieldErrorMessages={errors
             .filter((error) => error.path === path)
-            .map((error) => errorText(error, messages))}
+            .map((error) => describeError(error))}
           errorsAt={(member) =>
             errors
               .filter((error) => error.path === `${path}.${member}`)
-              .map((error) => errorText(error, messages))
+              .map((error) => describeError(error))
           }
           isInvalid={errors.length > 0}
           isRequired={controller.isRequired(path)}
@@ -296,13 +321,6 @@ export function KilnForm(props: KilnFormProps) {
       </div>
     );
   };
-
-  const allElements = form.pages.flatMap(function collect(
-    node: Page | Element | ItemElement,
-  ): (Element | ItemElement)[] {
-    const children = "elements" in node ? (node.elements as (Element | ItemElement)[]) : [];
-    return [...("type" in node ? [node] : []), ...children.flatMap(collect)];
-  });
 
   /** Label of a member below a field: a name or address part, or a file name. */
   const memberLabel = (element: Element | ItemElement, fieldPath: string, member: string) => {
@@ -363,7 +381,7 @@ export function KilnForm(props: KilnFormProps) {
                       focusField(error.path);
                     }}
                   >
-                    {[labelOf(error.path), errorText(error, messages)].filter(Boolean).join(": ")}
+                    {[labelOf(error.path), describeError(error)].filter(Boolean).join(": ")}
                   </a>
                 </li>
               ))}
