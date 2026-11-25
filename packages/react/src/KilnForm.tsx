@@ -304,18 +304,42 @@ export function KilnForm(props: KilnFormProps) {
     return [...("type" in node ? [node] : []), ...children.flatMap(collect)];
   });
 
-  const labelOf = (path: string) => {
-    const [head, index, child] = path.split(".");
-    const top = allElements.find((element) => element.key === head);
-    if (top?.type === "repeater" && child !== undefined) {
-      const inner = allElements.find(
-        (element) => element.key === child && "label" in element && element !== top,
-      );
-      const itemLabel = text(top.itemLabel) ?? text(top.label) ?? top.key;
-      const heading = format(messages.itemHeading, { item: itemLabel, index: Number(index) + 1 });
-      return [heading, inner && "label" in inner ? text(inner.label) : child].join(" – ");
+  /** Label of a member below a field: a name or address part, or a file name. */
+  const memberLabel = (element: Element | ItemElement, fieldPath: string, member: string) => {
+    if (element.type === "name") return messages.nameParts[member as keyof Messages["nameParts"]];
+    if (element.type === "address")
+      return messages.addressParts[member as keyof Messages["addressParts"]];
+    if (element.type === "file") {
+      const files = valueAt(fieldPath);
+      const file = Array.isArray(files) ? files[Number(member)] : undefined;
+      return file && typeof file === "object" && !Array.isArray(file)
+        ? String(file.name)
+        : undefined;
     }
-    return top && "label" in top ? text(top.label) : undefined;
+    return undefined;
+  };
+
+  /** A readable label for an error path, for example "Full name – Last name". */
+  const labelOf = (path: string) => {
+    const segments = path.split(".");
+    const top = allElements.find((element) => element.key === segments[0]);
+    if (!top) return undefined;
+    const parts: (string | undefined)[] = [];
+    let field: Element | ItemElement = top;
+    let fieldPath = segments[0]!;
+    let rest = segments.slice(1);
+    if (top.type === "repeater" && rest.length >= 2) {
+      const itemLabel = text(top.itemLabel) ?? text(top.label) ?? top.key;
+      parts.push(format(messages.itemHeading, { item: itemLabel, index: Number(rest[0]) + 1 }));
+      const child = allElements.find((element) => element.key === rest[1] && element !== top);
+      if (!child) return parts.join(" – ");
+      field = child;
+      fieldPath = segments.slice(0, 3).join(".");
+      rest = rest.slice(2);
+    }
+    parts.push("label" in field ? text(field.label) : undefined);
+    if (rest.length > 0) parts.push(memberLabel(field, fieldPath, rest[0]!));
+    return parts.filter(Boolean).join(" – ");
   };
 
   return (

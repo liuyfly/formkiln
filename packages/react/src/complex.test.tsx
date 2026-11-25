@@ -43,8 +43,52 @@ describe("composite fields", () => {
     const family = screen.getByRole("textbox", { name: "Last name" });
     expect(family.getAttribute("aria-invalid")).toBe("true");
     expect((await screen.findByRole("alert")).textContent).toContain(
-      "Full name: This field is required",
+      "Full name – Last name: This field is required",
     );
+  });
+});
+
+describe("invalid styling", () => {
+  it("marks only the parts with errors of a composite field as invalid", async () => {
+    const user = userEvent.setup();
+    const style = document.createElement("style");
+    style.textContent = readFileSync(join(import.meta.dirname, "styles.css"), "utf8");
+    document.head.append(style);
+    try {
+      render(
+        <KilnForm
+          form={page([
+            {
+              type: "name",
+              key: "fullName",
+              label: "Full name",
+              parts: ["title", "given", "family"],
+              required: true,
+            },
+          ])}
+        />,
+      );
+      await user.type(screen.getByRole("textbox", { name: "Title" }), "CEO");
+      await user.click(screen.getByRole("button", { name: "Submit" }));
+      const summary = await screen.findByRole("alert");
+      expect([...summary.querySelectorAll("li")].map((item) => item.textContent)).toEqual([
+        "Full name – First name: This field is required",
+        "Full name – Last name: This field is required",
+      ]);
+
+      const invalidSelectors = [...style.sheet!.cssRules]
+        .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule)
+        .map((rule) => rule.selectorText)
+        .filter((selector) => selector.includes("data-invalid"));
+      const styledInvalid = (input: HTMLElement) =>
+        invalidSelectors.some((selector) => input.matches(selector));
+
+      expect(styledInvalid(screen.getByRole("textbox", { name: "Title" }))).toBe(false);
+      expect(styledInvalid(screen.getByRole("textbox", { name: "First name" }))).toBe(true);
+      expect(styledInvalid(screen.getByRole("textbox", { name: "Last name" }))).toBe(true);
+    } finally {
+      style.remove();
+    }
   });
 });
 
@@ -127,7 +171,9 @@ describe("file fields", () => {
     expect(screen.getByText("big.pdf")).toBeTruthy();
     expect(uploadFile).toHaveBeenCalledTimes(2);
     await user.click(screen.getByRole("button", { name: "Submit" }));
-    expect((await screen.findByRole("alert")).textContent).toContain("smaller than 1000 bytes");
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "Documents – big.pdf: The file must be smaller than 1000 bytes",
+    );
 
     await user.click(screen.getByRole("button", { name: "Remove big.pdf" }));
     expect(screen.queryByText("big.pdf")).toBeNull();
