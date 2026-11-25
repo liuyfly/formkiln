@@ -222,3 +222,110 @@ describe("<KilnForm />", () => {
     expect(onChange).toHaveBeenLastCalledWith({ email: "a" });
   });
 });
+
+describe("layout grid", () => {
+  const layoutForm: FormDocument = {
+    schemaVersion: 1,
+    key: "contact",
+    title: "Contact",
+    pages: [
+      {
+        key: "main",
+        elements: [
+          { type: "text", key: "given", label: "First name", width: 1 },
+          { type: "text", key: "family", label: "Last name", width: 2 },
+          { type: "hidden", key: "source", label: "Source", valueType: "string", width: 1 },
+          { type: "radio", key: "kind", label: "Kind", options: opts("person", "company") },
+          {
+            type: "text",
+            key: "company",
+            label: "Company",
+            width: 1,
+            visible: { "==": [{ var: "kind" }, "company"] },
+          },
+          {
+            type: "panel",
+            key: "address",
+            title: "Address",
+            width: 2,
+            elements: [
+              { type: "text", key: "city", label: "City", width: 2 },
+              { type: "text", key: "postcode", label: "Postcode", width: 1 },
+            ],
+          },
+          {
+            type: "repeater",
+            key: "lines",
+            label: "Lines",
+            minItems: 1,
+            elements: [
+              { type: "text", key: "item", label: "Item", width: 2 },
+              { type: "number", key: "qty", label: "Quantity", width: 1 },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  const cellOf = (label: string) =>
+    screen
+      .getByRole("textbox", { name: new RegExp(`^${label}`) })
+      .closest(".fk-cell") as HTMLElement | null;
+
+  it("places elements with a width in cells spanning that many columns", () => {
+    const { container } = render(<KilnForm form={layoutForm} />);
+    expect(container.querySelector(".fk-form")?.hasAttribute("data-fk-layout")).toBe(true);
+    const grid = container.querySelector("section .fk-grid") as HTMLElement;
+    expect(grid.style.getPropertyValue("--fk-columns")).toBe("3");
+    expect(cellOf("First name")?.style.getPropertyValue("--fk-span")).toBe("1");
+    expect(cellOf("Last name")?.style.getPropertyValue("--fk-span")).toBe("2");
+    // Elements without a width span the whole row, without a cell.
+    expect(screen.getByRole("radiogroup", { name: /^Kind/ }).closest(".fk-cell")).toBeNull();
+  });
+
+  it("gives panels and repeater items their own grid", async () => {
+    const user = userEvent.setup();
+    render(<KilnForm form={layoutForm} />);
+    const city = cellOf("City");
+    expect(city?.style.getPropertyValue("--fk-span")).toBe("2");
+    expect(city?.parentElement?.closest(".fk-panel")).not.toBeNull();
+    const panelCell = screen.getByRole("group", { name: "Address" }).closest(".fk-cell");
+    expect((panelCell as HTMLElement).style.getPropertyValue("--fk-span")).toBe("2");
+    await user.click(screen.getByRole("button", { name: "Add Lines" }));
+    expect(cellOf("Quantity")?.style.getPropertyValue("--fk-span")).toBe("1");
+    expect(cellOf("Quantity")?.closest(".fk-repeater-item")).not.toBeNull();
+  });
+
+  it("gives no cell to hidden fields and inactive elements", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<KilnForm form={layoutForm} />);
+    const top = container.querySelector("section .fk-grid") as HTMLElement;
+    const topCells = () =>
+      Array.from(top.children).filter((el) => el.classList.contains("fk-cell"));
+    // given, family, panel: the hidden field and the inactive company field take no cell.
+    expect(topCells()).toHaveLength(3);
+    await user.click(screen.getByRole("radio", { name: "company" }));
+    expect(topCells()).toHaveLength(4);
+    expect(cellOf("Company")?.style.getPropertyValue("--fk-span")).toBe("1");
+  });
+
+  it("keeps forms without widths on the plain flow", () => {
+    const { container } = render(<KilnForm form={form} />);
+    expect(container.querySelector(".fk-form")?.hasAttribute("data-fk-layout")).toBe(false);
+    expect(container.querySelector(".fk-grid")).toBeNull();
+  });
+
+  it("uses the columns of settings.layout", () => {
+    const { container } = render(
+      <KilnForm
+        form={{
+          ...layoutForm,
+          settings: { layout: { columns: 4 } },
+        }}
+      />,
+    );
+    const grid = container.querySelector("section .fk-grid") as HTMLElement;
+    expect(grid.style.getPropertyValue("--fk-columns")).toBe("4");
+  });
+});
