@@ -11,12 +11,15 @@
   "homepage": "https://github.com/liuyfly/formkiln#readme",
   "bugs": "https://github.com/liuyfly/formkiln/issues",
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "*.css"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./styles.css": "./dist/styles.css",
     "./package.json": "./package.json"
   },
   "files": [
@@ -27,19 +30,27 @@
     "provenance": true
   },
   "scripts": {
-    "build": "tsup src/index.tsx --format esm --dts --clean --external react",
+    "build": "tsup src/index.tsx --format esm --dts --clean && node -e \"import('node:fs').then((fs) => fs.copyFileSync('src/styles.css', 'dist/styles.css'))\"",
     "test": "vitest run",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@formkiln/core": "workspace:*"
+    "@formkiln/core": "workspace:*",
+    "@formkiln/spec": "workspace:*",
+    "@internationalized/date": "^3.12.4",
+    "react-aria-components": "^1.22.1"
   },
   "peerDependencies": {
     "react": ">=18"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.13",
     "@types/react": "^19.3.0",
-    "react": "^19.3.1"
+    "@types/react-dom": "^19.3.0",
+    "jsdom": "^31.0.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   }
 }

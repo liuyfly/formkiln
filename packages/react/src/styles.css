@@ -1,0 +1,429 @@
+/*
+ * Formkiln default theme. Override the custom properties on .fk-form (or :root) to rebrand.
+ * Every element uses an fk- class, and interactive states come from React Aria data attributes.
+ * Popovers are rendered in a portal outside .fk-form, so they declare the same tokens.
+ */
+.fk-form,
+.fk-popover {
+  --fk-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fk-text: #1f2328;
+  --fk-muted: #59636e;
+  --fk-bg: #ffffff;
+  --fk-surface: #f6f8fa;
+  --fk-border: #c7ccd1;
+  --fk-accent: #2563eb;
+  --fk-accent-text: #ffffff;
+  --fk-error: #c62828;
+  --fk-error-bg: #fdecea;
+  --fk-focus: #f59e0b;
+  --fk-radius: 8px;
+  --fk-gap: 1.25rem;
+  --fk-control-height: 2.75rem;
+
+  font-family: var(--fk-font);
+  color: var(--fk-text);
+  background: var(--fk-bg);
+  line-height: 1.5;
+}
+
+.fk-form {
+  max-width: 40rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .fk-form:not([data-theme="light"]),
+  .fk-popover:not([data-theme="light"]) {
+    --fk-text: #e6edf3;
+    --fk-muted: #9198a1;
+    --fk-bg: #0d1117;
+    --fk-surface: #161b22;
+    --fk-border: #3d444d;
+    --fk-accent: #4f8cff;
+    --fk-error: #ff7b72;
+    --fk-error-bg: #3c1618;
+  }
+}
+
+.fk-form *,
+.fk-form *::before,
+.fk-form *::after,
+.fk-popover *,
+.fk-popover *::before,
+.fk-popover *::after {
+  box-sizing: border-box;
+}
+
+.fk-progress {
+  color: var(--fk-muted);
+  font-size: 0.875rem;
+  margin: 0 0 0.5rem;
+}
+
+.fk-page-title {
+  font-size: 1.5rem;
+  margin: 0 0 1rem;
+}
+
+.fk-page-title:focus {
+  outline: none;
+}
+
+.fk-page-description,
+.fk-description {
+  color: var(--fk-muted);
+  font-size: 0.9375rem;
+  margin: 0 0 0.5rem;
+}
+
+.fk-field-wrapper,
+.fk-content {
+  margin-bottom: var(--fk-gap);
+}
+
+.fk-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.fk-label {
+  font-weight: 600;
+}
+
+.fk-optional {
+  font-weight: 400;
+  color: var(--fk-muted);
+}
+
+.fk-input {
+  min-height: var(--fk-control-height);
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: inherit;
+  background: var(--fk-bg);
+  border: 1px solid var(--fk-border);
+  border-radius: var(--fk-radius);
+  width: 100%;
+}
+
+.fk-textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.fk-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fk-group > .fk-input {
+  flex: 1;
+}
+
+.fk-affix {
+  color: var(--fk-muted);
+}
+
+.fk-input[data-focused],
+.fk-input:focus-visible,
+.fk-group[data-focus-within] {
+  outline: 3px solid var(--fk-focus);
+  outline-offset: 1px;
+}
+
+.fk-field[data-invalid] .fk-input,
+.fk-field[data-invalid] .fk-group {
+  border-color: var(--fk-error);
+  border-width: 2px;
+}
+
+.fk-error {
+  color: var(--fk-error);
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.fk-choice {
+  gap: 0.5rem;
+}
+
+.fk-inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 1.5rem;
+}
+
+.fk-inline > .fk-label,
+.fk-inline > .fk-description,
+.fk-inline > .fk-error {
+  flex-basis: 100%;
+}
+
+.fk-radio,
+.fk-checkbox,
+.fk-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  cursor: pointer;
+}
+
+.fk-radio::before,
+.fk-checkbox::before {
+  content: "";
+  flex: none;
+  width: 1.375rem;
+  height: 1.375rem;
+  border: 2px solid var(--fk-border);
+  background: var(--fk-bg);
+}
+
+.fk-radio::before {
+  border-radius: 50%;
+}
+
+.fk-checkbox::before {
+  border-radius: 4px;
+}
+
+.fk-radio[data-selected]::before {
+  border: 6px solid var(--fk-accent);
+}
+
+.fk-checkbox[data-selected]::before {
+  background: var(--fk-accent)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3 3 7-7' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E")
+    center / 80% no-repeat;
+  border-color: var(--fk-accent);
+}
+
+.fk-switch::before {
+  content: "";
+  flex: none;
+  width: 2.5rem;
+  height: 1.375rem;
+  border-radius: 999px;
+  background: var(--fk-border);
+  transition: background 0.15s;
+}
+
+.fk-switch[data-selected]::before {
+  background: var(--fk-accent);
+}
+
+.fk-radio[data-focus-visible]::before,
+.fk-checkbox[data-focus-visible]::before,
+.fk-switch[data-focus-visible]::before {
+  outline: 3px solid var(--fk-focus);
+  outline-offset: 2px;
+}
+
+.fk-select-button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: start;
+  cursor: pointer;
+}
+
+.fk-popover {
+  background: var(--fk-bg);
+  border: 1px solid var(--fk-border);
+  border-radius: var(--fk-radius);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.15);
+  min-width: var(--trigger-width);
+}
+
+.fk-listbox {
+  padding: 0.25rem;
+  outline: none;
+}
+
+.fk-option {
+  padding: 0.5rem 0.75rem;
+  border-radius: calc(var(--fk-radius) - 4px);
+  cursor: pointer;
+  outline: none;
+}
+
+.fk-option[data-focused] {
+  background: var(--fk-surface);
+}
+
+.fk-option[data-selected] {
+  font-weight: 600;
+  color: var(--fk-accent);
+}
+
+.fk-date-input {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.fk-segment {
+  padding: 0 0.125rem;
+  border-radius: 4px;
+}
+
+.fk-segment[data-placeholder] {
+  color: var(--fk-muted);
+}
+
+.fk-segment[data-focused] {
+  background: var(--fk-accent);
+  color: var(--fk-accent-text);
+  outline: none;
+}
+
+.fk-icon-button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.fk-dialog {
+  padding: 0.75rem;
+  outline: none;
+}
+
+.fk-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.fk-calendar-header button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.fk-calendar-header h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.fk-calendar table {
+  margin: 0 auto;
+}
+
+.fk-calendar-cell {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.fk-calendar-cell[data-outside-month] {
+  display: none;
+}
+
+.fk-calendar-cell[data-selected] {
+  background: var(--fk-accent);
+  color: var(--fk-accent-text);
+}
+
+.fk-calendar-cell[data-focus-visible] {
+  outline: 3px solid var(--fk-focus);
+}
+
+.fk-panel {
+  border: 0;
+  border-inline-start: 4px solid var(--fk-border);
+  margin: 0 0 var(--fk-gap);
+  padding: 0 0 0 1rem;
+}
+
+.fk-panel-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  padding: 0;
+}
+
+.fk-error-summary {
+  border: 4px solid var(--fk-error);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.fk-error-summary:focus {
+  outline: 3px solid var(--fk-focus);
+}
+
+.fk-error-summary-title {
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem;
+}
+
+.fk-error-summary ul {
+  margin: 0;
+  padding-inline-start: 1.25rem;
+}
+
+.fk-error-summary a {
+  color: var(--fk-error);
+  font-weight: 600;
+}
+
+.fk-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.fk-button {
+  min-height: var(--fk-control-height);
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--fk-radius);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.fk-button-primary {
+  background: var(--fk-accent);
+  color: var(--fk-accent-text);
+}
+
+.fk-button-secondary {
+  background: var(--fk-surface);
+  color: var(--fk-text);
+  border-color: var(--fk-border);
+}
+
+.fk-button[data-disabled] {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.fk-button[data-focus-visible] {
+  outline: 3px solid var(--fk-focus);
+  outline-offset: 2px;
+}
+
+.fk-submit-error,
+.fk-unsupported {
+  background: var(--fk-error-bg);
+  border-radius: var(--fk-radius);
+  padding: 0.75rem 1rem;
+}
+
+.fk-submitted {
+  font-size: 1.125rem;
+  padding: 1.25rem;
+  border-radius: var(--fk-radius);
+  background: var(--fk-surface);
+}
