@@ -1,5 +1,6 @@
 "use client";
 
+import ContentCopy from "@mui/icons-material/ContentCopy";
 import Edit from "@mui/icons-material/Edit";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -10,6 +11,8 @@ import Tabs from "@mui/material/Tabs";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { CreateFormDialog } from "../../../../../components/CreateFormDialog";
 import { useUser } from "../../../../../components/Shell";
 import { canEdit } from "../../../../../lib/api";
 
@@ -24,6 +27,7 @@ const TABS = [
 export function FormTabs({ formKey }: { formKey: string }) {
   const pathname = usePathname();
   const editor = canEdit(useUser());
+  const [duplicating, setDuplicating] = useState(false);
   const base = `/forms/${formKey}`;
   const current = TABS.find((tab) => tab.path && pathname.startsWith(base + tab.path))?.path ?? "";
   return (
@@ -35,6 +39,15 @@ export function FormTabs({ formKey }: { formKey: string }) {
         <Typography variant="h5" component="h1" sx={{ fontWeight: 600, flexGrow: 1 }}>
           {formKey}
         </Typography>
+        {editor && (
+          <Button
+            variant="outlined"
+            startIcon={<ContentCopy />}
+            onClick={() => setDuplicating(true)}
+          >
+            Duplicate
+          </Button>
+        )}
         <Button
           variant="contained"
           startIcon={<Edit />}
@@ -62,6 +75,11 @@ export function FormTabs({ formKey }: { formKey: string }) {
           ))}
         </Tabs>
       </Box>
+      <CreateFormDialog
+        open={duplicating}
+        onClose={() => setDuplicating(false)}
+        duplicateOf={formKey}
+      />
     </>
   );
 }
