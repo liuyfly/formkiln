@@ -2,6 +2,7 @@ import {
   API_URL,
   downstreamResponseHeaders,
   isAllowedPath,
+  staleCookieCleanup,
   upstreamRequestHeaders,
 } from "../../../lib/upstream";
 
@@ -23,9 +24,12 @@ async function forward(request: Request): Promise<Response> {
     cache: "no-store",
     redirect: "manual",
   } as RequestInit);
+  const headers = downstreamResponseHeaders(upstream);
+  const cleanup = staleCookieCleanup(request.headers.get("cookie"));
+  if (cleanup) headers.append("set-cookie", cleanup);
   return new Response(upstream.status === 204 ? null : upstream.body, {
     status: upstream.status,
-    headers: downstreamResponseHeaders(upstream),
+    headers,
   });
 }
 

@@ -1,7 +1,12 @@
 # Formkiln admin
 
-The back office of Formkiln: sign-in, members and personal security settings. Form management,
-submissions, sharing, webhooks and the audit log follow.
+The back office of Formkiln:
+
+- **Forms**: list, publish a form document (upload or paste JSON; static errors are listed with their JSON pointer), versions.
+- **Submissions**: newest first with a detail panel (files download through the admin), sensitive values masked unless an editor shows them (audited), CSV export with or without sensitive values (audited).
+- **Sharing**: public link with QR code, or embed-token access with instructions and short-lived test links.
+- **Webhooks**: add (the signing secret is shown once), delete, deliveries with status and redelivery.
+- **Members**, **audit log** (admins) and personal **settings** (password, recovery codes, sessions).
 
 - **Same-origin gateway.** The browser only talks to this app. `/v1/admin/**` and
   `/v1/manage/**` are forwarded to `formkiln-server` (`src/app/v1/[...path]/route.ts`), so no CORS
@@ -18,9 +23,10 @@ submissions, sharing, webhooks and the audit log follow.
 
 ## Configuration
 
-| Variable           | Default                 | Description                                                   |
-| ------------------ | ----------------------- | ------------------------------------------------------------- |
-| `FORMKILN_API_URL` | `http://localhost:8080` | Base URL of formkiln-server, reachable from this app's server |
+| Variable              | Default                 | Description                                                              |
+| --------------------- | ----------------------- | ------------------------------------------------------------------------ |
+| `FORMKILN_API_URL`    | `http://localhost:8080` | Base URL of formkiln-server, reachable from this app's server            |
+| `FORMKILN_HOSTED_URL` | `http://localhost:3100` | Public URL of the hosted fill-in site, used for share links and QR codes |
 
 Set `FORMKILN_ADMIN_URL` on formkiln-server to this app's public URL; it is used in invitation and
 reset emails. Deploy the admin on an internal network or behind a VPN when possible. Behind a
