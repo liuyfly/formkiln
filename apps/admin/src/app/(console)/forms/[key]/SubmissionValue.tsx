@@ -4,15 +4,19 @@ import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import Link from "@mui/material/Link";
 import type { ReactNode } from "react";
-import { formatSize, isFileRef, MASK, humanize } from "../../../../lib/answers";
+import { formatSize, humanize, isFileRef, MASK } from "../../../../lib/answers";
+import { withOptionLabels, type FieldInfoMap } from "../../../../lib/definition";
 
 /** Renders any answer: scalars, file lists with download links, composite values and repeaters. */
 export function SubmissionValue({
   value,
   formKey,
+  fields,
 }: {
   value: unknown;
   formKey: string;
+  /** Labels of the submission's version, for keys inside composite values and repeater items. */
+  fields?: FieldInfoMap | undefined;
 }): ReactNode {
   if (value === null || value === undefined || value === "") {
     return (
@@ -53,7 +57,7 @@ export function SubmissionValue({
         {value.map((item, index) => (
           <Box key={index} sx={{ borderLeft: 2, borderColor: "divider", pl: 1.5 }}>
             <Box sx={{ fontSize: 12, color: "text.secondary" }}>#{index + 1}</Box>
-            <SubmissionValue value={item} formKey={formKey} />
+            <SubmissionValue value={item} formKey={formKey} fields={fields} />
           </Box>
         ))}
       </Box>
@@ -73,10 +77,14 @@ export function SubmissionValue({
       {Object.entries(value as Record<string, unknown>).map(([key, part]) => (
         <Box key={key} sx={{ display: "contents" }}>
           <Box component="dt" sx={{ color: "text.secondary" }}>
-            {humanize(key)}
+            {fields?.get(key)?.label ?? humanize(key)}
           </Box>
           <Box component="dd" sx={{ m: 0 }}>
-            <SubmissionValue value={part} formKey={formKey} />
+            <SubmissionValue
+              value={withOptionLabels(part, fields?.get(key))}
+              formKey={formKey}
+              fields={fields}
+            />
           </Box>
         </Box>
       ))}

@@ -27,6 +27,12 @@ import { useUser } from "../../../../components/Shell";
 import { api, canEdit, errorMessage, type Submission } from "../../../../lib/api";
 import { DateTime } from "../../../../lib/format";
 import { humanize, previewText } from "../../../../lib/answers";
+import {
+  fieldInfo,
+  orderedEntries,
+  withOptionLabels,
+  type FieldInfoMap,
+} from "../../../../lib/definition";
 import { SubmissionValue } from "./SubmissionValue";
 
 const PAGE = 50;
@@ -42,11 +48,30 @@ export function SubmissionsView({ formKey }: { formKey: string }) {
   const [selected, setSelected] = useState<Submission | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [exportMenu, setExportMenu] = useState<HTMLElement | null>(null);
+  // Field labels by version, fetched when a submission of that version is opened.
+  const [definitions, setDefinitions] = useState<Map<number, FieldInfoMap>>(new Map());
+  const selectedVersion = selected?.version;
+
+  useEffect(() => {
+    if (selectedVersion === undefined || definitions.has(selectedVersion)) return;
+    api<{ definition: unknown }>(`/v1/manage/forms/${formKey}/versions/${selectedVersion}`).then(
+      (version) =>
+        setDefinitions((current) =>
+          new Map(current).set(selectedVersion, fieldInfo(version.definition)),
+        ),
+      () => setDefinitions((current) => new Map(current).set(selectedVersion, new Map())),
+    );
+  }, [formKey, selectedVersion, definitions]);
+
+  const fields = selectedVersion === undefined ? undefined : definitions.get(selectedVersion);
 
   const fetchPage = useCallback(
-    async (before: string | null, revealed: boolean) => {
+    async (after: Submission | null, revealed: boolean) => {
       const query = new URLSearchParams({ limit: String(PAGE), reveal: String(revealed) });
-      if (before) query.set("before", before);
+      if (after) {
+        query.set("before", after.submittedAt);
+        query.set("beforeId", after.id);
+      }
       return api<Submission[]>(`/v1/manage/forms/${formKey}/submissions?${query}`);
     },
     [formKey],
@@ -82,7 +107,7 @@ export function SubmissionsView({ formKey }: { formKey: string }) {
     if (!items?.length) return;
     setBusy(true);
     try {
-      const page = await fetchPage(items[items.length - 1]!.submittedAt, reveal);
+      const page = await fetchPage(items[items.length - 1]!, reveal);
       setItems([...items, ...page]);
       setMore(page.length === PAGE);
     } catch (failure) {
@@ -259,13 +284,17 @@ export function SubmissionsView({ formKey }: { formKey: string }) {
             </Stack>
             <Divider sx={{ mb: 2 }} />
             <Box component="dl" sx={{ m: 0, display: "grid", gap: 2 }}>
-              {Object.entries(selected.data).map(([key, value]) => (
+              {orderedEntries(selected.data, fields ?? new Map()).map(([key, value]) => (
                 <div key={key}>
                   <Typography component="dt" variant="body2" color="text.secondary">
-                    {humanize(key)}
+                    {fields?.get(key)?.label ?? humanize(key)}
                   </Typography>
                   <Box component="dd" sx={{ m: 0, mt: 0.25 }}>
-                    <SubmissionValue value={value} formKey={formKey} />
+                    <SubmissionValue
+                      value={withOptionLabels(value, fields?.get(key))}
+                      formKey={formKey}
+                      fields={fields}
+                    />
                   </Box>
                 </div>
               ))}
