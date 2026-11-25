@@ -1,0 +1,58 @@
+# Backing services for the end-to-end tests: PostgreSQL, Mailpit and (profile "server") the API
+# server image. The admin and hosted apps run from this checkout (see playwright.config.ts).
+#
+#   docker compose -f e2e/compose.yml --profile server up -d
+#   (then wait for http://localhost:8080/actuator/health/readiness)
+#
+# Locally you can run the server from source instead (formkiln-server: ./gradlew bootRun) with
+# FORMKILN_DB_URL=jdbc:postgresql://localhost:5434/formkiln and the settings below.
+# Test-only credentials; never reuse them.
+name: formkiln-e2e
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: formkiln
+      POSTGRES_USER: formkiln
+      POSTGRES_PASSWORD: formkiln
+    ports:
+      - "127.0.0.1:5434:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U formkiln -d formkiln"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:1026:1025"
+      - "127.0.0.1:8026:8025"
+
+  server:
+    image: ${FORMKILN_SERVER_IMAGE:-ghcr.io/liuyfly/formkiln-server:edge}
+    profiles: ["server"]
+    environment:
+      FORMKILN_DB_URL: jdbc:postgresql://postgres:5432/formkiln
+      FORMKILN_DB_USERNAME: formkiln
+      FORMKILN_DB_PASSWORD: formkiln
+      FORMKILN_ENCRYPTION_KEY: ZTJlLW9ubHktZW5jcnlwdGlvbi1rZXktMzItYnl0ZXM=
+      FORMKILN_SERVICE_TOKEN: e2e-service-token
+      FORMKILN_BOOTSTRAP_ADMIN_EMAIL: admin@e2e.test
+      FORMKILN_ADMIN_URL: http://localhost:3200
+      FORMKILN_HOSTED_URL: http://localhost:3100
+      FORMKILN_SMTP_HOST: mailpit
+      FORMKILN_SMTP_PORT: "1025"
+      FORMKILN_MAIL_POLL_INTERVAL: "500"
+      FORMKILN_STORAGE_PATH: /tmp/formkiln-files
+      # Every test run comes from one IP.
+      FORMKILN_AUTH_RATE_LIMIT: "1000"
+      FORMKILN_RUNTIME_RATE_LIMIT: "1000"
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy

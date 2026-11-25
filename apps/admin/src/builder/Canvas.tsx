@@ -12,6 +12,7 @@ import FormatIndentIncrease from "@mui/icons-material/FormatIndentIncrease";
 import MoreVert from "@mui/icons-material/MoreVert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import ButtonBase from "@mui/material/ButtonBase";
 import Chip from "@mui/material/Chip";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
@@ -166,19 +167,11 @@ function ElementCard({
   return (
     <Paper
       variant="outlined"
-      role="button"
-      tabIndex={0}
-      aria-pressed={selected}
-      aria-label={`${catalogEntry(element.type)?.label ?? element.type}: ${title}`}
+      // A convenience for pointers; keyboard and screen reader users select with the button below,
+      // which keeps the drag handle and the actions out of it (no nested controls).
       onClick={(event) => {
         event.stopPropagation();
         select({ kind: "element", loc });
-      }}
-      onKeyDown={(event) => {
-        if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
-          event.preventDefault();
-          select({ kind: "element", loc });
-        }
       }}
       sx={{
         p: 1.25,
@@ -187,7 +180,6 @@ function ElementCard({
         borderWidth: selected ? 2 : 1,
         bgcolor: isContainer(element) ? "action.hover" : "background.paper",
         opacity: drag.isDragging ? 0.4 : 1,
-        "&:focus-visible": { outline: 2, outlineColor: "primary.main", outlineStyle: "solid" },
       }}
     >
       <Stack direction="row" spacing={1} sx={{ alignItems: "center", minHeight: 30 }}>
@@ -214,8 +206,27 @@ function ElementCard({
             <DragIndicator fontSize="small" />
           </Box>
         )}
-        <Box sx={{ minWidth: 0 }}>
-          <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap>
+        <ButtonBase
+          aria-pressed={selected}
+          onClick={(event) => {
+            event.stopPropagation();
+            select({ kind: "element", loc });
+          }}
+          sx={{
+            display: "block",
+            flexGrow: 1,
+            minWidth: 0,
+            textAlign: "left",
+            borderRadius: 1,
+            "&:focus-visible": { outline: 2, outlineColor: "primary.main", outlineStyle: "solid" },
+          }}
+        >
+          <Typography
+            component="span"
+            variant="body2"
+            sx={{ display: "block", fontWeight: 500 }}
+            noWrap
+          >
             {title}
             {any.required === true && (
               <Box component="span" sx={{ color: "error.main" }}>
@@ -224,32 +235,54 @@ function ElementCard({
               </Box>
             )}
           </Typography>
-          <Stack direction="row" spacing={0.5} sx={{ mt: 0.25, flexWrap: "wrap", gap: 0.5 }}>
-            <Chip size="small" label={catalogEntry(element.type)?.label ?? element.type} />
+          <Stack
+            component="span"
+            direction="row"
+            spacing={0.5}
+            sx={{ mt: 0.25, flexWrap: "wrap", gap: 0.5 }}
+          >
             <Chip
+              component="span"
+              size="small"
+              label={catalogEntry(element.type)?.label ?? element.type}
+            />
+            <Chip
+              component="span"
               size="small"
               variant="outlined"
               label={element.key}
               sx={{ fontFamily: "monospace" }}
             />
             {any.sensitive === true && (
-              <Chip size="small" variant="outlined" color="warning" label="Sensitive" />
+              <Chip
+                component="span"
+                size="small"
+                variant="outlined"
+                color="warning"
+                label="Sensitive"
+              />
             )}
             {any.visible !== undefined && (
-              <Chip size="small" variant="outlined" label="Conditional" />
+              <Chip component="span" size="small" variant="outlined" label="Conditional" />
             )}
             {typeof any.required === "object" && (
-              <Chip size="small" variant="outlined" label="Conditionally required" />
+              <Chip
+                component="span"
+                size="small"
+                variant="outlined"
+                label="Conditionally required"
+              />
             )}
             {problems > 0 && (
               <Chip
+                component="span"
                 size="small"
                 color="error"
                 label={`${problems} problem${problems > 1 ? "s" : ""}`}
               />
             )}
           </Stack>
-        </Box>
+        </ButtonBase>
         {selected && <SelectedActions loc={loc} readOnly={readOnly} />}
       </Stack>
       {children && (

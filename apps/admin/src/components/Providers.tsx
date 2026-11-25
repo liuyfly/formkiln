@@ -14,6 +14,15 @@ const theme = createTheme({
   components: {
     MuiButton: { defaultProps: { disableElevation: true } },
     MuiTextField: { defaultProps: { fullWidth: true } },
+    // The help of a disabled field often explains why it is disabled, so it stays readable
+    // (WCAG 1.4.3); only the control itself is dimmed.
+    MuiFormHelperText: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          "&.Mui-disabled": { color: (theme.vars ?? theme).palette.text.secondary },
+        }),
+      },
+    },
   },
 });
 
