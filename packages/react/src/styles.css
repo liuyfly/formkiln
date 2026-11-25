@@ -30,6 +30,42 @@
   max-width: 40rem;
 }
 
+/* Layout grid (Form Schema §5.5): only forms that set widths use it. */
+.fk-form[data-fk-layout] {
+  max-width: 56rem;
+}
+
+.fk-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--fk-columns, 3), minmax(0, 1fr));
+  column-gap: var(--fk-gap);
+  align-items: start;
+}
+
+.fk-grid > * {
+  grid-column: 1 / -1;
+}
+
+.fk-grid > .fk-cell {
+  grid-column: span var(--fk-span);
+}
+
+/*
+ * One column when the space is narrow (WCAG 1.4.10 reflow): the viewport (also inside an
+ * iframe), or a host element declared as `container: fk / inline-size`.
+ */
+@media (max-width: 36rem) {
+  .fk-grid > .fk-cell {
+    grid-column: 1 / -1;
+  }
+}
+
+@container fk (max-width: 36rem) {
+  .fk-grid > .fk-cell {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   .fk-form:not([data-theme="light"]),
   .fk-popover:not([data-theme="light"]) {

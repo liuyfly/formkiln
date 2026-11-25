@@ -32,6 +32,11 @@ body {
   max-width: none;
 }
 
+/* Multi-column forms (Form Schema §5.5) get a wider card. */
+.hosted-card:has(.fk-form[data-fk-layout]) {
+  max-width: 60rem;
+}
+
 .hosted-title {
   font:
     700 1.75rem/1.25 system-ui,

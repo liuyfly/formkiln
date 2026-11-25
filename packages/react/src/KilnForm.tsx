@@ -12,7 +12,7 @@ import type {
   Text,
   ValidationError,
 } from "@formkiln/spec";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Button, I18nProvider } from "react-aria-components";
 import { defaultComponents } from "./fields/fields";
 import { Markdown } from "./markdown";
@@ -251,6 +251,40 @@ export function KilnForm(props: KilnFormProps) {
     return item && typeof item === "object" && !Array.isArray(item) ? (item[child!] ?? null) : null;
   };
 
+  // Form Schema §5.5. Forms that set no width keep the plain one-column flow.
+  const columns = form.settings?.layout?.columns ?? 3;
+  const layout = usesWidths(form);
+
+  /**
+   * Renders the elements of a page, a panel or a repeater item: on the layout grid when the form
+   * uses widths. Elements that render nothing (inactive, hidden fields) take no cell.
+   */
+  const renderList = (
+    elements: readonly (Element | ItemElement)[],
+    render: (element: Element | ItemElement) => ReactNode,
+  ): ReactNode => {
+    if (!layout) return elements.map(render);
+    return (
+      <div className="fk-grid" style={{ "--fk-columns": columns } as CSSProperties}>
+        {elements.map((element) => {
+          const node = render(element);
+          if (node === null || element.width === undefined || element.width >= columns) {
+            return node;
+          }
+          return (
+            <div
+              key={element.key}
+              className="fk-cell"
+              style={{ "--fk-span": element.width } as CSSProperties}
+            >
+              {node}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   /** Renders an element; `prefix` is `""` at the top level and `repeater.index.` inside items. */
   const renderElement = (element: Element | ItemElement, prefix: string): ReactNode => {
     const path = prefix + element.key;
@@ -264,7 +298,9 @@ export function KilnForm(props: KilnFormProps) {
             key={path}
             element={element}
             text={text}
-            renderChild={(child) => renderElement(child, prefix)}
+            renderChildren={(children) =>
+              renderList(children, (child) => renderElement(child, prefix))
+            }
           />
         );
       case "repeater":
@@ -317,7 +353,7 @@ export function KilnForm(props: KilnFormProps) {
                   {messages.remove}
                 </Button>
               </div>
-              {element.elements.map((child) => renderElement(child, `${path}.${index}.`))}
+              {renderList(element.elements, (child) => renderElement(child, `${path}.${index}.`))}
             </div>
           );
         })}
@@ -412,7 +448,11 @@ export function KilnForm(props: KilnFormProps) {
 
   return (
     <I18nProvider locale={locale}>
-      <div ref={rootRef} className={["fk-form", props.className].filter(Boolean).join(" ")}>
+      <div
+        ref={rootRef}
+        className={["fk-form", props.className].filter(Boolean).join(" ")}
+        data-fk-layout={layout || undefined}
+      >
         {!single && state.pages.length > 1 && (
           <p className="fk-progress">
             {format(messages.progress, { current: pageIndex + 1, total: state.pages.length })}
@@ -468,7 +508,7 @@ export function KilnForm(props: KilnFormProps) {
               {text(page.description) && (
                 <p className="fk-page-description">{text(page.description)}</p>
               )}
-              {page.elements.map((element) => renderElement(element, ""))}
+              {renderList(page.elements, (element) => renderElement(element, ""))}
             </section>
           ))}
           {(single || state.isLastPage) && props.beforeSubmit}
@@ -528,18 +568,30 @@ function Content({
 function Panel({
   element,
   text,
-  renderChild,
+  renderChildren,
 }: {
   element: PanelElement<Element> | PanelElement<ItemElement>;
   text: (value: Text | undefined) => string | undefined;
-  renderChild: (child: Element | ItemElement) => ReactNode;
+  renderChildren: (children: readonly (Element | ItemElement)[]) => ReactNode;
 }) {
   const title = text(element.title);
   return (
     <fieldset className="fk-panel">
       {title && <legend className="fk-panel-title">{title}</legend>}
       {text(element.description) && <p className="fk-description">{text(element.description)}</p>}
-      {(element.elements as (Element | ItemElement)[]).map(renderChild)}
+      {renderChildren(element.elements as (Element | ItemElement)[])}
     </fieldset>
   );
+}
+
+/** Whether any element of the form sets a width (Form Schema §5.5). */
+function usesWidths(form: FormDocument): boolean {
+  const visit = (elements: readonly (Element | ItemElement)[]): boolean =>
+    elements.some(
+      (element) =>
+        element.width !== undefined ||
+        ((element.type === "panel" || element.type === "repeater") &&
+          visit(element.elements as (Element | ItemElement)[])),
+    );
+  return form.pages.some((page) => visit(page.elements));
 }
