@@ -90,6 +90,13 @@ export interface Settings {
   defaultLocale?: Locale;
   locales?: Locale[];
   inactiveValues?: "retain" | "clear";
+  layout?: Layout;
+}
+
+/** The layout grid (docs/form-schema-v1.md §5.5). */
+export interface Layout {
+  /** Equal columns of the grid, 1 to 12. Default 3. */
+  columns?: number;
 }
 
 export interface FormDocument {
@@ -116,6 +123,8 @@ export interface Page {
 interface ElementBase {
   key: Key;
   visible?: Condition;
+  /** Columns spanned on the container's grid (docs/form-schema-v1.md §5.5). Default: all. */
+  width?: number;
   meta?: Record<string, unknown>;
 }
 
@@ -274,6 +283,7 @@ export const DEFINITION_ERROR_CODES = [
   "duplicateOption",
   "requiredParts",
   "validatorType",
+  "width",
 ] as const;
 
 export type DefinitionErrorCode = (typeof DEFINITION_ERROR_CODES)[number];

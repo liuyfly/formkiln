@@ -1732,6 +1732,199 @@
           "code": "unknownReference"
         }
       ]
+    },
+    {
+      "name": "widths up to the default three columns are valid",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "given",
+                "label": "Given name",
+                "width": 1
+              },
+              {
+                "type": "text",
+                "key": "family",
+                "label": "Family name",
+                "width": 2
+              },
+              {
+                "type": "content",
+                "key": "note",
+                "text": "Note",
+                "width": 3
+              },
+              {
+                "type": "panel",
+                "key": "box",
+                "width": 2,
+                "elements": [
+                  {
+                    "type": "text",
+                    "key": "inside",
+                    "label": "Inside",
+                    "width": 3
+                  }
+                ]
+              },
+              {
+                "type": "repeater",
+                "key": "rows",
+                "label": "Rows",
+                "width": 3,
+                "elements": [
+                  {
+                    "type": "number",
+                    "key": "amount",
+                    "label": "Amount",
+                    "width": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": []
+    },
+    {
+      "name": "a width wider than the default grid is reported",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a",
+                "width": 4
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/0/width",
+          "code": "width"
+        }
+      ]
+    },
+    {
+      "name": "widths are checked against settings.layout.columns at every level",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "settings": {
+          "layout": {
+            "columns": 2
+          }
+        },
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a",
+                "width": 2
+              },
+              {
+                "type": "content",
+                "key": "b",
+                "text": "b",
+                "width": 3
+              },
+              {
+                "type": "panel",
+                "key": "c",
+                "elements": [
+                  {
+                    "type": "text",
+                    "key": "d",
+                    "label": "d",
+                    "width": 3
+                  }
+                ]
+              },
+              {
+                "type": "repeater",
+                "key": "e",
+                "label": "e",
+                "width": 2,
+                "elements": [
+                  {
+                    "type": "panel",
+                    "key": "f",
+                    "elements": [
+                      {
+                        "type": "text",
+                        "key": "g",
+                        "label": "g",
+                        "width": 4
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/1/width",
+          "code": "width"
+        },
+        {
+          "pointer": "/pages/0/elements/2/elements/0/width",
+          "code": "width"
+        },
+        {
+          "pointer": "/pages/0/elements/3/elements/0/elements/0/width",
+          "code": "width"
+        }
+      ]
+    },
+    {
+      "name": "a wider grid allows wider elements",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "settings": {
+          "layout": {
+            "columns": 12
+          }
+        },
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "key": "a",
+                "label": "a",
+                "width": 12
+              }
+            ]
+          }
+        ]
+      },
+      "expected": []
     }
   ]
 }
