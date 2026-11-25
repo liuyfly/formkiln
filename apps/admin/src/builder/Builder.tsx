@@ -24,6 +24,7 @@ import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
+import type { FormDocument } from "@formkiln/spec";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -33,6 +34,7 @@ import { useUser } from "../components/Shell";
 import { api, canEdit, errorMessage } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import { Canvas } from "./Canvas";
+import { ChangesView } from "./ChangesView";
 import { BuilderDnd } from "./dnd";
 import { problemText } from "./catalog";
 import { Inspector } from "./Inspector";
@@ -44,7 +46,7 @@ import { useBuilder, type SaveStatus } from "./store";
 import { locOfPointer } from "./tree";
 import { saveNow, useAutosave, type SavedCopy } from "./useAutosave";
 
-type View = "design" | "preview" | "json";
+type View = "design" | "preview" | "json" | "changes";
 
 const STATUS: Record<
   SaveStatus,
@@ -62,6 +64,29 @@ function isTyping(target: EventTarget | null): boolean {
   return (
     !!element &&
     (element.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(element.tagName))
+  );
+}
+
+/** The working copy compared with the live version. */
+function PublishedChanges({ formKey, version }: { formKey: string; version: number }) {
+  const document = useBuilder((state) => state.document);
+  const [published, setPublished] = useState<FormDocument | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    api<{ definition: FormDocument }>(`/v1/manage/forms/${formKey}/versions/${version}`).then(
+      (result) => setPublished(result.definition),
+      (failure) => setError(errorMessage(failure)),
+    );
+  }, [formKey, version]);
+  if (error) return <Alert severity="error">{error}</Alert>;
+  if (!published) return <CircularProgress aria-label="Loading the live version" />;
+  return (
+    <ChangesView
+      before={published}
+      after={document}
+      beforeLabel={`live version ${version}`}
+      afterLabel="these changes"
+    />
   );
 }
 
@@ -230,6 +255,7 @@ export function Builder({ formKey }: { formKey: string }) {
             <ToggleButton value="design">Design</ToggleButton>
             <ToggleButton value="preview">Preview</ToggleButton>
             <ToggleButton value="json">JSON</ToggleButton>
+            {copy.latestVersion !== null && <ToggleButton value="changes">Changes</ToggleButton>}
           </ToggleButtonGroup>
           {!readOnly && copy.latestVersion !== null && (
             <Button
@@ -327,6 +353,11 @@ export function Builder({ formKey }: { formKey: string }) {
         </BuilderDnd>
       )}
       {view === "preview" && <Preview />}
+      {view === "changes" && copy.latestVersion !== null && (
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <PublishedChanges formKey={formKey} version={copy.latestVersion} />
+        </Paper>
+      )}
       {view === "json" && (
         <Paper variant="outlined" sx={{ p: 2 }}>
           <JsonView key={store.version} readOnly={readOnly} />
