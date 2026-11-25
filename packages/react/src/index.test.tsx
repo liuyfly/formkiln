@@ -76,6 +76,35 @@ describe("<KilnForm />", () => {
     ]);
   });
 
+  it("shows a field's error on blur, but only after a press elsewhere is released", async () => {
+    const user = userEvent.setup();
+    render(<KilnForm form={form} />);
+    const name = screen.getByRole("textbox", { name: "Name" });
+    await user.type(name, "Ada");
+    const email = screen.getByRole("textbox", { name: /Email/ });
+    await user.type(email, "nope");
+    await user.tab();
+    expect(email.getAttribute("aria-invalid")).toBe("true");
+    cleanup();
+
+    render(<KilnForm form={form} />);
+    const fresh = screen.getByRole("textbox", { name: /Email/ });
+    await user.type(fresh, "nope");
+    await user.pointer({
+      keys: "[MouseLeft>]",
+      target: screen.getByRole("button", { name: "Continue" }),
+    });
+    // Pressed, not released: the layout must not change under the pointer yet.
+    expect(fresh.getAttribute("aria-invalid")).not.toBe("true");
+    await user.pointer({
+      keys: "[/MouseLeft]",
+      target: screen.getByRole("button", { name: "Continue" }),
+    });
+    // The click went through: Continue validated the page.
+    expect((await screen.findByRole("alert")).textContent).toContain("There is a problem");
+    await waitFor(() => expect(fresh.getAttribute("aria-invalid")).toBe("true"));
+  });
+
   it("moves focus to a field from the error summary", async () => {
     const user = userEvent.setup();
     render(<KilnForm form={form} />);

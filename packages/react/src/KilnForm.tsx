@@ -142,6 +142,37 @@ export function KilnForm(props: KilnFormProps) {
     if (focusTarget !== null) setFocusTarget(null);
   }, [focusTarget]);
 
+  // A press elsewhere (on Submit, say) blurs the field first. Showing its error right then shifts
+  // the layout under the pointer, so the release lands outside the button and the click is lost.
+  // Mark such fields once the press is over instead.
+  const pressing = useRef(false);
+  const deferredTouches = useRef(new Set<string>());
+  useEffect(() => {
+    const down = () => {
+      pressing.current = true;
+    };
+    const up = () => {
+      pressing.current = false;
+      if (deferredTouches.current.size === 0) return;
+      const paths = [...deferredTouches.current];
+      deferredTouches.current.clear();
+      // After the click of this press has been dispatched.
+      setTimeout(() => paths.forEach((path) => controller.touch(path)), 0);
+    };
+    document.addEventListener("pointerdown", down, true);
+    document.addEventListener("pointerup", up, true);
+    document.addEventListener("pointercancel", up, true);
+    return () => {
+      document.removeEventListener("pointerdown", down, true);
+      document.removeEventListener("pointerup", up, true);
+      document.removeEventListener("pointercancel", up, true);
+    };
+  }, [controller]);
+  const touch = (path: string) => {
+    if (pressing.current) deferredTouches.current.add(path);
+    else controller.touch(path);
+  };
+
   const focusField = (path: string) => {
     let current = path;
     for (;;) {
@@ -319,7 +350,7 @@ export function KilnForm(props: KilnFormProps) {
           placeholder={"placeholder" in field ? text(field.placeholder) : undefined}
           value={valueAt(path)}
           onChange={(value) => controller.setValue(path, value)}
-          onBlur={() => controller.touch(path)}
+          onBlur={() => touch(path)}
           errorMessages={errors.map((error) => describeError(error))}
           fieldErrorMessages={errors
             .filter((error) => error.path === path)
