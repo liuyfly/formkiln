@@ -1,5 +1,22 @@
 # @formkiln/react
 
+## 0.4.0
+
+### Minor Changes
+
+- 633ce74: Add a `beforeSubmit` slot, rendered above the submit button on the last page (for example a human verification widget), and `SubmitError`: throw it from `onSubmit` to show its message instead of the generic failure message.
+
+### Patch Changes
+
+- 0d434e7: Name and address fields count as visited only when focus leaves the whole field, so filling in Title no longer reveals "required" errors for First name and Last name before the user reaches them.
+- 4f83421: Item-count errors use messages specific to the element: repeaters name the add button ("Add at least 1 using “Add Previous address”", "You can add up to 2. Remove the extra ones."), checkboxes and files say "Select at least 2 options" and "Upload no more than 3 files", with plural forms through `Intl.PluralRules`. New `counts` messages (English and Simplified Chinese) and an optional context argument for `errorText`.
+- 0caf362: Date picker: month and year dropdowns in the calendar header (101 years around the shown year) to reach distant dates quickly; a compact popover aligned to the end of the input instead of stretching to its width; clearer today, hover, selected, pressed and unavailable day styles.
+- a50a0b5: Fix: a composite field with an error in one part no longer shows its other, valid parts with a red border (the invalid style now uses child combinators). The error summary labels member errors precisely, for example "Full name – Last name" or "Documents – big.pdf", instead of repeating the field label.
+- b4c5d35: Pages without a title no longer repeat the form title as their heading (the host page shows the form title), and their section no longer points `aria-labelledby` at a missing element. After a page change, focus moves to the page heading or, without one, to the page itself.
+- Updated dependencies [1c0c373]
+  - @formkiln/core@0.4.0
+  - @formkiln/spec@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes
