@@ -98,6 +98,7 @@ export default async function FormPage(props: Props) {
           embedToken={published.accessMode === "token" ? embedToken : null}
           draftScope={draftScope(embedToken)}
           captcha={published.captcha}
+          resumeByEmail={published.resumeByEmail === true}
         />
       </div>
     </main>
