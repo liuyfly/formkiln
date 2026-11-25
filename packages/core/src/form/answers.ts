@@ -94,17 +94,22 @@ export function validateAnswers(
   const activeMemo = new Map<string, boolean>();
   const effectiveMemo = new Map<string, JsonValue>();
   const calcMemo = new Map<string, Slot>();
-  const inProgress = new Set<string>();
+  // In-progress ids per memo: activity, calculation and effective value of the same path are
+  // different computations. Sharing one set made the effective value of a field look like a
+  // cycle when its activity was needed (a rule referencing a later field).
+  const inProgress = new Map<Map<string, unknown>, Set<string>>();
 
   const pathOf = (node: FormNode, index: number | null) =>
     node.repeater && index !== null ? `${node.repeater.key}.${index}.${node.key}` : node.key;
 
   const memoized = <T>(memo: Map<string, T>, id: string, fallback: T, compute: () => T): T => {
     if (memo.has(id)) return memo.get(id)!;
-    if (inProgress.has(id)) return fallback; // Only reachable for invalid (cyclic) documents.
-    inProgress.add(id);
+    let running = inProgress.get(memo as Map<string, unknown>);
+    if (!running) inProgress.set(memo as Map<string, unknown>, (running = new Set()));
+    if (running.has(id)) return fallback; // Only reachable for invalid (cyclic) documents.
+    running.add(id);
     const value = compute();
-    inProgress.delete(id);
+    running.delete(id);
     memo.set(id, value);
     return value;
   };

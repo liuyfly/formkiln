@@ -180,6 +180,47 @@
           ]
         }
       ]
+    },
+    "forwardReference": {
+      "schemaVersion": 1,
+      "key": "forwardReference",
+      "title": "Forward reference",
+      "pages": [
+        {
+          "key": "p",
+          "elements": [
+            {
+              "type": "textarea",
+              "key": "details",
+              "label": "Details",
+              "visible": {
+                "==": [
+                  {
+                    "var": "status"
+                  },
+                  "other"
+                ]
+              },
+              "required": true
+            },
+            {
+              "type": "radio",
+              "key": "status",
+              "label": "Status",
+              "options": [
+                {
+                  "value": "employed",
+                  "label": "Employed"
+                },
+                {
+                  "value": "other",
+                  "label": "Other"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   },
   "cases": [
@@ -350,6 +391,59 @@
           }
         ],
         "submission": {}
+      }
+    },
+    {
+      "name": "a rule may reference a field later in the document (active)",
+      "form": "forwardReference",
+      "answers": {
+        "status": "other",
+        "details": "Freelance"
+      },
+      "expected": {
+        "errors": [],
+        "inactive": [],
+        "submission": {
+          "details": "Freelance",
+          "status": "other"
+        },
+        "outcome": null
+      }
+    },
+    {
+      "name": "a rule may reference a field later in the document (inactive)",
+      "form": "forwardReference",
+      "answers": {
+        "status": "employed",
+        "details": "ignored"
+      },
+      "expected": {
+        "errors": [],
+        "inactive": ["details"],
+        "submission": {
+          "status": "employed"
+        },
+        "outcome": null
+      }
+    },
+    {
+      "name": "a required field shown by a later field is required",
+      "form": "forwardReference",
+      "answers": {
+        "status": "other"
+      },
+      "expected": {
+        "errors": [
+          {
+            "path": "details",
+            "code": "required"
+          }
+        ],
+        "inactive": [],
+        "submission": {
+          "status": "other"
+        },
+        "outcome": null
       }
     }
   ]
