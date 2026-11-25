@@ -67,3 +67,71 @@ body {
   margin: 1rem 0;
   min-height: 65px;
 }
+
+/* "Email me a link to continue later" */
+.hosted-resume {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--fk-border, #d1d9e0);
+  font-family: system-ui, sans-serif;
+}
+
+.hosted-resume-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--fk-accent, #0969da);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.hosted-resume-form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.hosted-resume-title {
+  font-weight: 600;
+  margin: 0;
+}
+
+.hosted-resume-hint {
+  margin: 0;
+  color: #59636e;
+  font-size: 0.875rem;
+}
+
+.hosted-resume-label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.hosted-resume-input {
+  font: inherit;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--fk-border, #d1d9e0);
+  border-radius: 6px;
+  max-width: 24rem;
+}
+
+.hosted-resume-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.hosted-resume-status {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: #1a7f37;
+}
+
+.hosted-resume-status.error {
+  color: #d1242f;
+}
+
+.hosted-resume-status:empty {
+  display: none;
+}

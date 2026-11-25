@@ -2,7 +2,7 @@
 
 import { KilnForm, SubmitError, type UploadFile } from "@formkiln/react";
 import type { FormDocument, JsonValue } from "@formkiln/spec";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { hostedMessages } from "../../../lib/messages";
 import { Turnstile } from "./Turnstile";
 
@@ -17,6 +17,8 @@ interface Props {
   /** Keeps the drafts of different embedding users apart (the token's subject). */
   draftScope: string;
   captcha: { provider: string; siteKey: string } | null;
+  /** Offer "email me a link to continue later". */
+  resumeByEmail: boolean;
 }
 
 /** Delay between the last change and saving the draft. */
@@ -44,7 +46,15 @@ function storageSet(key: string, value: string | null) {
  * saved as you type, files are uploaded when selected and the submission is re-validated by
  * formkiln-server.
  */
-export function HostedForm({ form, version, locale, embedToken, draftScope, captcha }: Props) {
+export function HostedForm({
+  form,
+  version,
+  locale,
+  embedToken,
+  draftScope,
+  captcha,
+  resumeByEmail,
+}: Props) {
   const messages = hostedMessages(locale);
   const base = `/f/${form.key}`;
   const storageKey = `formkiln:draft:${form.key}:${draftScope}`;
@@ -58,6 +68,8 @@ export function HostedForm({ form, version, locale, embedToken, draftScope, capt
   const honeypot = useRef<HTMLInputElement>(null);
   const captchaToken = useRef<string | null>(null);
   const [captchaReset, setCaptchaReset] = useState(0);
+  const latest = useRef<Answers>({});
+  const [done, setDone] = useState(false);
 
   // The embed token is only needed in memory; keep it out of the address bar and history.
   useEffect(() => {
@@ -68,9 +80,19 @@ export function HostedForm({ form, version, locale, embedToken, draftScope, capt
     }
   }, []);
 
-  // Restore the draft of this device, if any.
+  // Restore the draft from a "continue later" link (#draft=<token>), else the one of this device.
   useEffect(() => {
     let cancelled = false;
+    const fromLink = new URLSearchParams(window.location.hash.slice(1)).get("draft");
+    if (fromLink) {
+      // Keep the token out of the address bar and history.
+      window.history.replaceState(
+        window.history.state,
+        "",
+        window.location.pathname + window.location.search,
+      );
+      if (/^[A-Za-z0-9_-]{16,128}$/.test(fromLink)) storageSet(storageKey, fromLink);
+    }
     const token = storageGet(storageKey);
     if (!token) {
       setInitialAnswers({});
@@ -82,6 +104,7 @@ export function HostedForm({ form, version, locale, embedToken, draftScope, capt
         if (response.ok) {
           draftToken.current = token;
           const draft = (await response.json()) as { answers: Answers };
+          latest.current = draft.answers ?? {};
           setInitialAnswers(draft.answers ?? {});
         } else {
           if (response.status === 404) storageSet(storageKey, null);
@@ -119,7 +142,17 @@ export function HostedForm({ form, version, locale, embedToken, draftScope, capt
     [base, storageKey, embedToken],
   );
 
+  /** Saves the current answers now and resolves with the draft token. */
+  const saveNow = async (): Promise<string | null> => {
+    if (pending.current) clearTimeout(pending.current);
+    pending.current = null;
+    saving.current = saving.current.then(() => save(latest.current)).catch(() => undefined);
+    await saving.current;
+    return draftToken.current;
+  };
+
   const onChange = (answers: Answers) => {
+    latest.current = answers;
     if (pending.current) clearTimeout(pending.current);
     pending.current = setTimeout(() => {
       pending.current = null;
@@ -169,48 +202,154 @@ export function HostedForm({ form, version, locale, embedToken, draftScope, capt
   if (initialAnswers === null) return null;
 
   return (
-    <KilnForm
-      form={form}
-      locale={locale}
-      initialAnswers={initialAnswers}
-      onChange={onChange}
-      uploadFile={uploadFile}
-      beforeSubmit={beforeSubmit}
-      onSubmit={async ({ submission, outcome }) => {
-        if (captcha && !captchaToken.current) throw new SubmitError(messages.verificationRequired);
-        // Let a draft save in flight finish, so its token is known and deleted on submit.
-        if (pending.current) clearTimeout(pending.current);
-        pending.current = null;
-        await saving.current;
-        const response = await fetch(`${base}/submit`, {
-          method: "POST",
-          headers: { ...auth, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            version,
-            answers: submission,
-            locale,
-            draftToken: draftToken.current,
-            captchaToken: captchaToken.current,
-            honeypot: honeypot.current?.value ?? "",
-          }),
-        });
-        if (!response.ok) {
-          if (captcha) setCaptchaReset((n) => n + 1);
-          const problem = (await response.json().catch(() => ({}))) as { code?: string };
-          if (problem.code === "captchaFailed") throw new SubmitError(messages.verificationFailed);
-          if (response.status === 401) throw new SubmitError(messages.sessionExpired);
-          if (response.status === 429) throw new SubmitError(messages.tooManyRequests);
-          // The server re-validates; any other rejection is reported as a failed submission.
-          throw new Error(`Submission failed with status ${response.status}`);
-        }
-        submitted.current = true;
-        draftToken.current = null;
-        storageSet(storageKey, null);
-        const redirect = form.submit?.outcomes?.find(
-          (candidate) => candidate.key === outcome,
-        )?.redirect;
-        if (redirect) window.location.assign(redirect);
-      }}
-    />
+    <>
+      <KilnForm
+        form={form}
+        locale={locale}
+        initialAnswers={initialAnswers}
+        onChange={onChange}
+        uploadFile={uploadFile}
+        beforeSubmit={beforeSubmit}
+        onSubmit={async ({ submission, outcome }) => {
+          if (captcha && !captchaToken.current)
+            throw new SubmitError(messages.verificationRequired);
+          // Let a draft save in flight finish, so its token is known and deleted on submit.
+          if (pending.current) clearTimeout(pending.current);
+          pending.current = null;
+          await saving.current;
+          const response = await fetch(`${base}/submit`, {
+            method: "POST",
+            headers: { ...auth, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              version,
+              answers: submission,
+              locale,
+              draftToken: draftToken.current,
+              captchaToken: captchaToken.current,
+              honeypot: honeypot.current?.value ?? "",
+            }),
+          });
+          if (!response.ok) {
+            if (captcha) setCaptchaReset((n) => n + 1);
+            const problem = (await response.json().catch(() => ({}))) as { code?: string };
+            if (problem.code === "captchaFailed")
+              throw new SubmitError(messages.verificationFailed);
+            if (response.status === 401) throw new SubmitError(messages.sessionExpired);
+            if (response.status === 429) throw new SubmitError(messages.tooManyRequests);
+            // The server re-validates; any other rejection is reported as a failed submission.
+            throw new Error(`Submission failed with status ${response.status}`);
+          }
+          submitted.current = true;
+          setDone(true);
+          draftToken.current = null;
+          storageSet(storageKey, null);
+          const redirect = form.submit?.outcomes?.find(
+            (candidate) => candidate.key === outcome,
+          )?.redirect;
+          if (redirect) window.location.assign(redirect);
+        }}
+      />
+      {resumeByEmail && !done && (
+        <ResumeByEmail base={base} auth={auth} locale={locale} saveNow={saveNow} />
+      )}
+    </>
+  );
+}
+
+/** "Email me a link to continue later": saves the draft, then asks the server to email the link. */
+function ResumeByEmail({
+  base,
+  auth,
+  locale,
+  saveNow,
+}: {
+  base: string;
+  auth: Record<string, string>;
+  locale: string;
+  saveNow: () => Promise<string | null>;
+}) {
+  const messages = hostedMessages(locale);
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const send = async (event: FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setStatus(null);
+    try {
+      const token = await saveNow();
+      if (!token) throw new Error("No draft");
+      const response = await fetch(`${base}/drafts/resume-link`, {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json", "Formkiln-Draft": token },
+        body: JSON.stringify({ email, locale }),
+      });
+      if (response.status === 429) setStatus({ ok: false, text: messages.resumeTooMany });
+      else if (!response.ok) setStatus({ ok: false, text: messages.resumeFailed });
+      else {
+        setStatus({ ok: true, text: messages.resumeSent });
+        setOpen(false);
+      }
+    } catch {
+      setStatus({ ok: false, text: messages.resumeFailed });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="hosted-resume">
+      {open ? (
+        <form onSubmit={send} className="hosted-resume-form" aria-labelledby="hosted-resume-title">
+          <p id="hosted-resume-title" className="hosted-resume-title">
+            {messages.resumeTitle}
+          </p>
+          <p className="hosted-resume-hint">{messages.resumeHint}</p>
+          <label className="hosted-resume-label">
+            {messages.resumeEmail}
+            <input
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="hosted-resume-input"
+            />
+          </label>
+          <div className="hosted-resume-actions">
+            <button type="submit" className="fk-button fk-button-primary" disabled={busy}>
+              {messages.resumeSend}
+            </button>
+            <button
+              type="button"
+              className="fk-button fk-button-secondary"
+              onClick={() => setOpen(false)}
+              disabled={busy}
+            >
+              {messages.resumeCancel}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button
+          type="button"
+          className="hosted-resume-link"
+          onClick={() => {
+            setOpen(true);
+            setStatus(null);
+          }}
+        >
+          {messages.resumeOffer}
+        </button>
+      )}
+      <p
+        role="status"
+        className={status?.ok === false ? "hosted-resume-status error" : "hosted-resume-status"}
+      >
+        {status?.text}
+      </p>
+    </div>
   );
 }

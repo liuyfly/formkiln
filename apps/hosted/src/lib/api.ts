@@ -14,6 +14,8 @@ export interface RuntimeForm {
   accessMode: "public" | "token";
   /** Human verification to show before submitting, or null. */
   captcha: { provider: string; siteKey: string } | null;
+  /** Whether the form offers "email me a link to continue later". */
+  resumeByEmail: boolean;
   definition: FormDocument;
 }
 

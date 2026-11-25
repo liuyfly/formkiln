@@ -190,3 +190,27 @@ export interface DefinitionError {
   pointer: string;
   code: string;
 }
+
+export interface NotificationSettings {
+  teamRecipients: string[];
+  teamIncludeAnswers: boolean;
+  confirmationEnabled: boolean;
+  confirmationEmailField: string | null;
+  confirmationSubject: string | null;
+  confirmationBody: string | null;
+  resumeEnabled: boolean;
+  defaultConfirmationSubject: string;
+  defaultConfirmationBody: string;
+}
+
+export interface MailEntry {
+  id: string;
+  kind: "team" | "confirmation" | "resume";
+  submissionId: string | null;
+  recipient: string;
+  status: "pending" | "sent" | "dead";
+  attempts: number;
+  lastError: string | null;
+  createdAt: string;
+  sentAt: string | null;
+}
