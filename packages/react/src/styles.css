@@ -64,7 +64,9 @@
   margin: 0 0 1rem;
 }
 
-.fk-page-title:focus {
+/* Programmatic focus targets after a page change; not interactive. */
+.fk-page-title:focus,
+.fk-page:focus {
   outline: none;
 }
 

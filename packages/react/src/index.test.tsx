@@ -159,6 +159,16 @@ describe("<KilnForm />", () => {
     expect(await screen.findByText("verify")).toBeTruthy();
   });
 
+  it("does not repeat the form title as a page heading", () => {
+    const untitled: FormDocument = {
+      ...form,
+      pages: [{ key: "only", elements: [{ type: "text", key: "name", label: "Name" }] }],
+    };
+    render(<KilnForm form={untitled} />);
+    expect(screen.queryByRole("heading", { name: "Application" })).toBeNull();
+    expect(document.querySelector("section.fk-page")?.getAttribute("aria-labelledby")).toBeNull();
+  });
+
   it("uses the locale for form texts and interface strings", async () => {
     const user = userEvent.setup();
     render(<KilnForm form={form} locale="zh-CN" />);
