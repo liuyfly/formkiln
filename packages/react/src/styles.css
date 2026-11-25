@@ -132,8 +132,13 @@
   outline-offset: 1px;
 }
 
-.fk-field[data-invalid] .fk-input,
-.fk-field[data-invalid] .fk-group {
+/*
+ * Child combinators only: a composite field (name, address) is itself an invalid .fk-field when
+ * one part has an error, and must not mark its other, valid parts as invalid.
+ */
+.fk-field[data-invalid] > .fk-input,
+.fk-field[data-invalid] > .fk-group,
+.fk-field[data-invalid] > .fk-group > .fk-input {
   border-color: var(--fk-error);
   border-width: 2px;
 }
