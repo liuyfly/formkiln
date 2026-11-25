@@ -135,7 +135,8 @@ export function KilnForm(props: KilnFormProps) {
   useEffect(() => {
     if (focusTarget === "summary") summaryRef.current?.focus();
     if (focusTarget === "page") {
-      rootRef.current?.querySelector<HTMLElement>(".fk-page-title")?.focus();
+      // The page heading, or the page itself when it has no title.
+      rootRef.current?.querySelector<HTMLElement>(".fk-page-title, .fk-page[tabindex]")?.focus();
       rootRef.current?.scrollIntoView?.({ block: "start" });
     }
     if (focusTarget !== null) setFocusTarget(null);
@@ -415,18 +416,22 @@ export function KilnForm(props: KilnFormProps) {
           }}
         >
           {pages.map((page) => (
+            // The form title belongs to the host page (hosted site or embedding app); only the
+            // page's own title is shown here.
             <section
               key={page.key}
               className="fk-page"
-              aria-labelledby={`${domId(form.key, page.key)}-title`}
+              {...(text(page.title)
+                ? { "aria-labelledby": `${domId(form.key, page.key)}-title` }
+                : { tabIndex: -1 })}
             >
-              {(text(page.title) ?? (!single && text(form.title))) && (
+              {text(page.title) && (
                 <h2
                   id={`${domId(form.key, page.key)}-title`}
                   className="fk-page-title"
                   tabIndex={-1}
                 >
-                  {text(page.title) ?? text(form.title)}
+                  {text(page.title)}
                 </h2>
               )}
               {text(page.description) && (
