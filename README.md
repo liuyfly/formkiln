@@ -51,6 +51,11 @@ pnpm dev          # start the playground
 4. Visual builder
 5. Repeaters, i18n, PDF export and v1.0
 
+## Self-hosting
+
+Container images for the server, admin and hosted apps are published to GHCR. See
+[`deploy/README.md`](deploy/README.md) for a Docker Compose setup and a production checklist.
+
 ## Contributing
 
 Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and our [Code of Conduct](CODE_OF_CONDUCT.md). To report a security issue, see [SECURITY.md](SECURITY.md).
