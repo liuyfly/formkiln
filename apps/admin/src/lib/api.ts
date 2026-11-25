@@ -132,9 +132,12 @@ export function isFormKey(value: string): boolean {
 export interface FormSummary {
   key: string;
   accessMode: "public" | "token";
-  latestVersion: number;
-  latestPublishedAt: string;
+  /** Null until the form is published. */
+  latestVersion: number | null;
+  latestPublishedAt: string | null;
   submissionCount: number;
+  /** A working copy with changes that are not published yet. */
+  unpublishedChanges: boolean;
 }
 
 export interface Version {

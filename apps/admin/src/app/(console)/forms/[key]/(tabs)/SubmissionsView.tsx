@@ -22,17 +22,17 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import { useCallback, useEffect, useState } from "react";
-import { ConfirmDialog, type Confirmation } from "../../../../components/ConfirmDialog";
-import { useUser } from "../../../../components/Shell";
-import { api, canEdit, errorMessage, type Submission } from "../../../../lib/api";
-import { DateTime } from "../../../../lib/format";
-import { humanize, previewText } from "../../../../lib/answers";
+import { ConfirmDialog, type Confirmation } from "../../../../../components/ConfirmDialog";
+import { useUser } from "../../../../../components/Shell";
+import { api, canEdit, errorMessage, type Submission } from "../../../../../lib/api";
+import { DateTime } from "../../../../../lib/format";
+import { humanize, previewText } from "../../../../../lib/answers";
 import {
   fieldInfo,
   orderedEntries,
   withOptionLabels,
   type FieldInfoMap,
-} from "../../../../lib/definition";
+} from "../../../../../lib/definition";
 import { SubmissionValue } from "./SubmissionValue";
 
 const PAGE = 50;

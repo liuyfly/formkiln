@@ -4,8 +4,8 @@ import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import Link from "@mui/material/Link";
 import type { ReactNode } from "react";
-import { formatSize, humanize, isFileRef, MASK } from "../../../../lib/answers";
-import { withOptionLabels, type FieldInfoMap } from "../../../../lib/definition";
+import { formatSize, humanize, isFileRef, MASK } from "../../../../../lib/answers";
+import { withOptionLabels, type FieldInfoMap } from "../../../../../lib/definition";
 
 /** Renders any answer: scalars, file lists with download links, composite values and repeaters. */
 export function SubmissionValue({
