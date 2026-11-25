@@ -45,9 +45,25 @@ export interface KilnFormProps {
   components?: FieldComponents;
   /** Override some or all user interface strings. */
   messages?: Partial<Messages>;
+  /**
+   * Rendered inside the form just above the submit button, on the last page (or always with
+   * single-page navigation). For example a human verification widget.
+   */
+  beforeSubmit?: ReactNode;
   /** Rendered instead of the default confirmation once the form is submitted. */
   renderSubmitted?: (outcome: string | null) => ReactNode;
   className?: string;
+}
+
+/**
+ * Throw from `onSubmit` to show `message` to the user instead of the generic failure message,
+ * for example when human verification failed.
+ */
+export class SubmitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SubmitError";
+  }
 }
 
 const domId = (formKey: string, path: string) =>
@@ -101,7 +117,7 @@ export function KilnForm(props: KilnFormProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
   const [showSummary, setShowSummary] = useState(false);
-  const [submitError, setSubmitError] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [focusTarget, setFocusTarget] = useState<"summary" | "page" | null>(null);
   const [pendingFocus, setPendingFocus] = useState<string | null>(null);
 
@@ -161,12 +177,14 @@ export function KilnForm(props: KilnFormProps) {
   };
 
   const onSubmit = async () => {
-    setSubmitError(false);
+    setSubmitError(null);
     try {
       const result = await controller.submit(props.onSubmit);
       if (!result.ok) blocked(result.errors);
-    } catch {
-      setSubmitError(true);
+    } catch (error) {
+      setSubmitError(
+        error instanceof SubmitError && error.message ? error.message : messages.submitFailed,
+      );
     }
   };
 
@@ -417,9 +435,10 @@ export function KilnForm(props: KilnFormProps) {
               {page.elements.map((element) => renderElement(element, ""))}
             </section>
           ))}
+          {(single || state.isLastPage) && props.beforeSubmit}
           {submitError && (
             <p className="fk-submit-error" role="alert">
-              {messages.submitFailed}
+              {submitError}
             </p>
           )}
           <div className="fk-actions">

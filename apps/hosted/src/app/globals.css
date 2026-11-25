@@ -53,3 +53,17 @@ body {
   color: #59636e;
   text-align: center;
 }
+
+/* Off-screen trap for bots; hidden from people and assistive technology. */
+.hosted-honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.hosted-captcha {
+  margin: 1rem 0;
+  min-height: 65px;
+}
