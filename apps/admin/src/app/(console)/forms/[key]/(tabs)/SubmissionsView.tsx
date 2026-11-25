@@ -278,6 +278,40 @@ export function SubmissionsView({ formKey }: { formKey: string }) {
                   </Typography>
                 )}
               </Box>
+              {editor && (
+                <Button
+                  color="error"
+                  size="small"
+                  sx={{ mr: 1 }}
+                  onClick={() =>
+                    setConfirmation({
+                      title: "Delete this submission?",
+                      text: "The answers and uploaded files are deleted permanently, with its webhook deliveries and queued emails. This cannot be undone.",
+                      action: "Delete",
+                      danger: true,
+                      run: async () => {
+                        setBusy(true);
+                        try {
+                          await api(`/v1/manage/forms/${formKey}/submissions/${selected.id}`, {
+                            method: "DELETE",
+                          });
+                          setItems(
+                            (current) => current?.filter((item) => item.id !== selected.id) ?? null,
+                          );
+                          setSelected(null);
+                        } catch (failure) {
+                          setError(errorMessage(failure));
+                        } finally {
+                          setBusy(false);
+                          setConfirmation(null);
+                        }
+                      },
+                    })
+                  }
+                >
+                  Delete
+                </Button>
+              )}
               <IconButton aria-label="Close" onClick={() => setSelected(null)}>
                 <Close />
               </IconButton>

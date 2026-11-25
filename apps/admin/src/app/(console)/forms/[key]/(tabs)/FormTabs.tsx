@@ -22,6 +22,7 @@ const TABS = [
   { path: "/sharing", label: "Sharing" },
   { path: "/webhooks", label: "Webhooks" },
   { path: "/notifications", label: "Notifications" },
+  { path: "/data", label: "Data" },
 ];
 
 /** Form title, breadcrumb and section tabs. */
