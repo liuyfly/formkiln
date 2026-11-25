@@ -17,6 +17,8 @@ export interface HostedMessages {
   resumeSent: string;
   resumeFailed: string;
   resumeTooMany: string;
+  receiptDownload: string;
+  receiptFailed: string;
 }
 
 const en: HostedMessages = {
@@ -38,6 +40,9 @@ const en: HostedMessages = {
   resumeSent: "Link sent. Check your email; it works for 30 days after your last change.",
   resumeFailed: "The link could not be sent. Check the address and try again.",
   resumeTooMany: "Too many emails for this form today. Use the link you already received.",
+  receiptDownload: "Download a receipt (PDF)",
+  receiptFailed:
+    "The receipt could not be downloaded. It is available for one hour after submitting.",
 };
 
 const zhCN: HostedMessages = {
@@ -59,6 +64,8 @@ const zhCN: HostedMessages = {
   resumeSent: "链接已发送，请查收邮件。链接在您最后一次修改后 30 天内有效。",
   resumeFailed: "链接发送失败，请检查邮箱地址后重试。",
   resumeTooMany: "今天本表单的邮件发送次数过多，请使用已收到的链接。",
+  receiptDownload: "下载回执（PDF）",
+  receiptFailed: "回执下载失败。回执在提交后 1 小时内可以下载。",
 };
 
 export function hostedMessages(locale: string): HostedMessages {

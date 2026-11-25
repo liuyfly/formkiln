@@ -3,6 +3,7 @@ import { API_URL, isEmbedToken, isFormKey } from "./api";
 
 /** Request headers passed on to formkiln-server. */
 const DRAFT_TOKEN = /^[A-Za-z0-9_-]{16,128}$/;
+const RECEIPT_TOKEN = /^[A-Za-z0-9_-]{1,400}\.[A-Za-z0-9_-]{1,100}$/;
 
 /**
  * Headers for an upstream request: the embed token, the draft token and the client address.
@@ -18,6 +19,8 @@ export function upstreamHeaders(request: Request, extra: Record<string, string> 
   }
   const draft = request.headers.get("formkiln-draft");
   if (draft && DRAFT_TOKEN.test(draft)) headers.set("Formkiln-Draft", draft);
+  const receipt = request.headers.get("formkiln-receipt");
+  if (receipt && RECEIPT_TOKEN.test(receipt)) headers.set("Formkiln-Receipt", receipt);
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) headers.set("X-Forwarded-For", forwarded);
   return headers;

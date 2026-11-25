@@ -135,3 +135,36 @@ body {
 .hosted-resume-status:empty {
   display: none;
 }
+
+.hosted-receipt {
+  margin-top: 1rem;
+}
+
+/* Buttons outside the form (continue later, receipt); same look as the form's buttons. */
+.hosted-button {
+  font:
+    600 0.9375rem system-ui,
+    sans-serif;
+  padding: 0.5rem 1rem;
+  border-radius: var(--fk-radius, 6px);
+  border: 1px solid var(--fk-border, #d1d9e0);
+  background: var(--fk-bg, #fff);
+  color: var(--fk-text, #1f2328);
+  cursor: pointer;
+}
+
+.hosted-button-primary {
+  background: var(--fk-accent, #0969da);
+  border-color: var(--fk-accent, #0969da);
+  color: #fff;
+}
+
+.hosted-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.hosted-button:focus-visible {
+  outline: 2px solid var(--fk-accent, #0969da);
+  outline-offset: 2px;
+}

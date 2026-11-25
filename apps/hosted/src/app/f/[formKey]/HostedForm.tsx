@@ -70,6 +70,7 @@ export function HostedForm({
   const [captchaReset, setCaptchaReset] = useState(0);
   const latest = useRef<Answers>({});
   const [done, setDone] = useState(false);
+  const [receiptToken, setReceiptToken] = useState<string | null>(null);
 
   // The embed token is only needed in memory; keep it out of the address bar and history.
   useEffect(() => {
@@ -240,6 +241,8 @@ export function HostedForm({
             throw new Error(`Submission failed with status ${response.status}`);
           }
           submitted.current = true;
+          const accepted = (await response.json().catch(() => ({}))) as { receiptToken?: string };
+          setReceiptToken(accepted.receiptToken ?? null);
           setDone(true);
           draftToken.current = null;
           storageSet(storageKey, null);
@@ -249,10 +252,65 @@ export function HostedForm({
           if (redirect) window.location.assign(redirect);
         }}
       />
+      {done && receiptToken && (
+        <Receipt base={base} token={receiptToken} formKey={form.key} locale={locale} />
+      )}
       {resumeByEmail && !done && (
         <ResumeByEmail base={base} auth={auth} locale={locale} saveNow={saveNow} />
       )}
     </>
+  );
+}
+
+/** Downloads the respondent's receipt (the token is sent in a header, never in a URL). */
+function Receipt({
+  base,
+  token,
+  formKey,
+  locale,
+}: {
+  base: string;
+  token: string;
+  formKey: string;
+  locale: string;
+}) {
+  const messages = hostedMessages(locale);
+  const [failed, setFailed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const download = async () => {
+    setBusy(true);
+    setFailed(false);
+    try {
+      const response = await fetch(`${base}/receipt?locale=${encodeURIComponent(locale)}`, {
+        headers: { "Formkiln-Receipt": token },
+      });
+      if (!response.ok) throw new Error(String(response.status));
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${formKey}-receipt.pdf`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="hosted-receipt">
+      <button
+        type="button"
+        className="hosted-button"
+        onClick={() => void download()}
+        disabled={busy}
+      >
+        {messages.receiptDownload}
+      </button>
+      <p role="status" className="hosted-resume-status error">
+        {failed ? messages.receiptFailed : ""}
+      </p>
+    </div>
   );
 }
 
@@ -319,12 +377,12 @@ function ResumeByEmail({
             />
           </label>
           <div className="hosted-resume-actions">
-            <button type="submit" className="fk-button fk-button-primary" disabled={busy}>
+            <button type="submit" className="hosted-button hosted-button-primary" disabled={busy}>
               {messages.resumeSend}
             </button>
             <button
               type="button"
-              className="fk-button fk-button-secondary"
+              className="hosted-button"
               onClick={() => setOpen(false)}
               disabled={busy}
             >
