@@ -11,14 +11,17 @@ import {
   childrenOf,
   duplicate,
   elementAt,
+  insertAt,
   insertElement,
   moveIntoPrevious,
   moveOut,
+  moveTo,
   moveToPage,
   moveWithin,
   newPage,
   removeElement,
   type Loc,
+  type Slot,
 } from "./tree";
 
 enableMapSet();
@@ -56,6 +59,10 @@ interface Actions {
   select: (selection: Selection) => void;
   showPage: (page: number) => void;
   addElement: (element: Element) => void;
+  /** Drops a new element at a slot; false when it is not allowed there. */
+  insertElementAt: (element: Element, slot: Slot) => boolean;
+  /** Moves an element to a slot; false when it is not allowed there. */
+  moveElement: (from: Loc, slot: Slot) => boolean;
   removeSelected: () => void;
   duplicateSelected: () => void;
   moveSelected: (move: "up" | "down" | "into" | "out") => void;
@@ -175,6 +182,26 @@ export const useBuilder = create<BuilderStore>()((set, get) => {
         loc = insertElement(draft as FormDocument, page, element, selectedLoc());
       });
       commit(next, { selection: { kind: "element", loc: loc! } });
+    },
+
+    insertElementAt: (element, slot) => {
+      let loc: Loc | null = null;
+      const next = produce(get().document, (draft) => {
+        loc = insertAt(draft as FormDocument, element, slot);
+      });
+      if (!loc) return false;
+      commit(next, { selection: { kind: "element", loc }, page: slot.page });
+      return true;
+    },
+
+    moveElement: (from, slot) => {
+      let loc: Loc | null = null;
+      const next = produce(get().document, (draft) => {
+        loc = moveTo(draft as FormDocument, from, slot);
+      });
+      if (!loc) return false;
+      commit(next, { selection: { kind: "element", loc }, page: (loc as Loc).page });
+      return true;
     },
 
     removeSelected: () => {

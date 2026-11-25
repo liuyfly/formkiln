@@ -86,4 +86,35 @@ describe("builder store", () => {
     expect(useBuilder.getState().saveStatus).toBe("saved");
     expect(useBuilder.getState().revision).toBe(9);
   });
+
+  it("drops new and existing elements at slots", () => {
+    const store = useBuilder.getState();
+    expect(
+      store.insertElementAt(
+        { type: "number", key: "age", label: "Age" },
+        { page: 0, parent: [], index: 0 },
+      ),
+    ).toBe(true);
+    expect(useBuilder.getState().document.pages[0]!.elements.map((e) => e.key)).toEqual([
+      "age",
+      "a",
+    ]);
+    expect(
+      useBuilder.getState().moveElement({ page: 0, path: [0] }, { page: 0, parent: [], index: 2 }),
+    ).toBe(true);
+    expect(useBuilder.getState().document.pages[0]!.elements.map((e) => e.key)).toEqual([
+      "a",
+      "age",
+    ]);
+    expect(useBuilder.getState().selection).toEqual({
+      kind: "element",
+      loc: { page: 0, path: [1] },
+    });
+    // Not a list: refused without a history entry.
+    const before = useBuilder.getState().past.length;
+    expect(
+      useBuilder.getState().moveElement({ page: 0, path: [0] }, { page: 0, parent: [1], index: 0 }),
+    ).toBe(false);
+    expect(useBuilder.getState().past.length).toBe(before);
+  });
 });

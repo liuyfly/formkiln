@@ -3,7 +3,7 @@
 The back office of Formkiln:
 
 - **Forms**: list (drafts and unpublished changes marked), create a form, import a form document (upload or paste JSON; static errors are listed with their JSON pointer), versions.
-- **Builder** (`/forms/<key>/edit`): pages and fields in three columns (fields, canvas, properties), undo and redo, preview, JSON view, autosave to the server's working copy with conflict handling, and publishing with a review of changes that affect existing submissions. Conditions are edited as JSON Logic until the visual logic editor lands.
+- **Builder** (`/forms/<key>/edit`): pages and fields in three columns (fields, canvas, properties), drag and drop (from the palette, between sections and repeating groups, onto page tabs; buttons do the same from the keyboard), undo and redo, preview, JSON view, autosave to the server's working copy with conflict handling, and publishing with a review of changes that affect existing submissions. Conditions are edited as JSON Logic until the visual logic editor lands.
 - **Submissions**: newest first with a detail panel (files download through the admin), sensitive values masked unless an editor shows them (audited), CSV export with or without sensitive values (audited).
 - **Sharing**: public link with QR code, or embed-token access with instructions and short-lived test links.
 - **Webhooks**: add (the signing secret is shown once), delete, deliveries with status and redelivery.

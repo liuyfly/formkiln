@@ -33,6 +33,7 @@ import { useUser } from "../components/Shell";
 import { api, canEdit, errorMessage } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import { Canvas } from "./Canvas";
+import { BuilderDnd } from "./dnd";
 import { problemText } from "./catalog";
 import { Inspector } from "./Inspector";
 import { JsonView } from "./JsonView";
@@ -280,48 +281,50 @@ export function Builder({ formKey }: { formKey: string }) {
         )}
 
       {view === "design" && (
-        <Box
-          sx={{
-            display: "grid",
-            gap: 1.5,
-            gridTemplateColumns: { xs: "1fr", md: "200px minmax(0, 1fr) 340px" },
-            alignItems: "start",
-          }}
-        >
-          <Paper
-            variant="outlined"
+        <BuilderDnd onRefused={(text) => setNotice({ severity: "error", text })}>
+          <Box
             sx={{
-              p: 1.5,
-              position: { md: "sticky" },
-              top: { md: 80 },
-              maxHeight: { md: "calc(100dvh - 100px)" },
-              overflowY: "auto",
+              display: "grid",
+              gap: 1.5,
+              gridTemplateColumns: { xs: "1fr", md: "200px minmax(0, 1fr) 340px" },
+              alignItems: "start",
             }}
           >
-            <Palette disabled={readOnly} />
-          </Paper>
-          <Paper variant="outlined" sx={{ p: 2, minHeight: 400 }}>
-            <Canvas readOnly={readOnly} />
-          </Paper>
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 2,
-              position: { md: "sticky" },
-              top: { md: 80 },
-              maxHeight: { md: "calc(100dvh - 100px)" },
-              overflowY: "auto",
-            }}
-          >
-            <Box
-              component="fieldset"
-              disabled={readOnly}
-              sx={{ border: 0, p: 0, m: 0, minWidth: 0 }}
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 1.5,
+                position: { md: "sticky" },
+                top: { md: 80 },
+                maxHeight: { md: "calc(100dvh - 100px)" },
+                overflowY: "auto",
+              }}
             >
-              <Inspector />
-            </Box>
-          </Paper>
-        </Box>
+              <Palette disabled={readOnly} />
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 2, minHeight: 400 }}>
+              <Canvas readOnly={readOnly} />
+            </Paper>
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2,
+                position: { md: "sticky" },
+                top: { md: 80 },
+                maxHeight: { md: "calc(100dvh - 100px)" },
+                overflowY: "auto",
+              }}
+            >
+              <Box
+                component="fieldset"
+                disabled={readOnly}
+                sx={{ border: 0, p: 0, m: 0, minWidth: 0 }}
+              >
+                <Inspector />
+              </Box>
+            </Paper>
+          </Box>
+        </BuilderDnd>
       )}
       {view === "preview" && <Preview />}
       {view === "json" && (
