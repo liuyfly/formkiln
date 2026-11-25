@@ -278,6 +278,14 @@ export function SubmissionsView({ formKey }: { formKey: string }) {
                   </Typography>
                 )}
               </Box>
+              <Button
+                size="small"
+                sx={{ mr: 1 }}
+                href={`/v1/manage/forms/${formKey}/submissions/${selected.id}/pdf?reveal=${reveal}`}
+                download
+              >
+                PDF
+              </Button>
               {editor && (
                 <Button
                   color="error"

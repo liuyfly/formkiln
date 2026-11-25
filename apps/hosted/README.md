@@ -10,6 +10,7 @@ A public fill-in site for published Formkiln forms: `https://forms.example.com/f
   - `POST /f/{formKey}/files`: uploads are streamed to the server, which checks type and size.
 - Token-mode forms: open `/f/{formKey}?token=<embed token>` (issued by your backend through `POST /v1/manage/embed-tokens`). The token is removed from the address bar and sent with every request. Without a valid token the page says the link has expired. Drafts are kept apart per token subject.
 - Continue later: when the form enables it (admin → Notifications), a link under the form saves the draft and emails the respondent a link (`/f/<key>#draft=<token>`) that reopens it on any device; the token is removed from the address bar.
+- Receipts: after submitting, _Download a receipt (PDF)_ fetches the respondent's receipt (no sensitive answers) with the one-hour receipt token sent in a header.
 - Bot protection: a hidden honeypot field, and the Cloudflare Turnstile widget when the server has Turnstile configured.
 - Follows the outcome's `redirect` after a successful submission.
 - Pages are marked `noindex` and served with basic security headers.
