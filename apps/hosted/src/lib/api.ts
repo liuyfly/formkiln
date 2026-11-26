@@ -26,6 +26,13 @@ const KEY = /^[a-z][a-zA-Z0-9_]{0,63}$/;
 /** Embed tokens are two base64url segments. */
 const EMBED_TOKEN = /^[A-Za-z0-9_-]{1,2048}\.[A-Za-z0-9_-]{1,256}$/;
 
+/** Workspace slugs: lower-case letters, digits and inner hyphens. */
+const WORKSPACE = /^[a-z0-9][a-z0-9-]{0,46}[a-z0-9]$/;
+
+export function isWorkspace(value: string): boolean {
+  return WORKSPACE.test(value);
+}
+
 export function isFormKey(value: string): boolean {
   return KEY.test(value);
 }
@@ -48,9 +55,13 @@ export function embedSubject(token: string): string | null {
 }
 
 /** The latest published version of a form. Token forms need a valid embed token. */
-export async function loadForm(key: string, embedToken?: string): Promise<LoadResult> {
-  if (!isFormKey(key)) return { status: "notFound" };
-  const response = await fetch(`${API_URL}/v1/forms/${key}`, {
+export async function loadForm(
+  workspace: string,
+  key: string,
+  embedToken?: string,
+): Promise<LoadResult> {
+  if (!isWorkspace(workspace) || !isFormKey(key)) return { status: "notFound" };
+  const response = await fetch(`${API_URL}/v1/w/${workspace}/forms/${key}`, {
     cache: "no-store",
     headers: isEmbedToken(embedToken) ? { Authorization: `Bearer ${embedToken}` } : {},
   });

@@ -111,7 +111,14 @@ export function InviteForm() {
         Join Formkiln
       </Typography>
       <Typography variant="body2" color="text.secondary">
-        You were invited as <strong>{details.role}</strong>.
+        You were invited
+        {details.workspace && (
+          <>
+            {" "}
+            to <strong>{details.workspace}</strong>
+          </>
+        )}{" "}
+        as <strong>{details.role}</strong>.
       </Typography>
       <TextField label="Email" value={details.email} autoComplete="username" disabled />
       <PasswordFields

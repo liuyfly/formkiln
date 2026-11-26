@@ -11,7 +11,7 @@ async function box(page: Page, label: string) {
 test.describe("multi-column form (Form Schema §5.5)", () => {
   test("places elements on the grid in document order", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto("/f/e2eLayout");
+    await page.goto("/f/default/e2eLayout");
     const given = await box(page, "First name");
     const family = await box(page, "Last name");
     const email = await box(page, "Email");
@@ -39,7 +39,7 @@ test.describe("multi-column form (Form Schema §5.5)", () => {
 
   test("stacks into one column on a phone", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/f/e2eLayout");
+    await page.goto("/f/default/e2eLayout");
     const given = await box(page, "First name");
     const family = await box(page, "Last name");
     expect(family.y).toBeGreaterThan(given.y);
@@ -50,7 +50,7 @@ test.describe("multi-column form (Form Schema §5.5)", () => {
 
   test("keeps the focus order equal to the document order", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto("/f/e2eLayout");
+    await page.goto("/f/default/e2eLayout");
     await page.getByRole("textbox", { name: /^First name/ }).focus();
     await page.keyboard.press("Tab");
     await expect(page.getByRole("textbox", { name: /^Last name/ })).toBeFocused();
@@ -59,7 +59,7 @@ test.describe("multi-column form (Form Schema §5.5)", () => {
   });
 
   test("submits like any other form", async ({ page }) => {
-    await page.goto("/f/e2eLayout");
+    await page.goto("/f/default/e2eLayout");
     await page.getByRole("textbox", { name: /^First name/ }).fill("Ada");
     await page.getByRole("textbox", { name: /^Last name/ }).fill("Lovelace");
     await page.getByRole("textbox", { name: /^Email/ }).fill("ada@example.com");

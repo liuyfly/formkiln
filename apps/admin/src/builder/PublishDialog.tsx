@@ -16,6 +16,7 @@ import { api, errorMessage, type DefinitionError } from "../lib/api";
 import { problemText } from "./catalog";
 import { useBuilder } from "./store";
 import { saveNow } from "./useAutosave";
+import { useWorkspace } from "../lib/workspace";
 
 interface Change {
   kind: "fieldRemoved" | "fieldRenamed" | "typeChanged" | "optionsRemoved";
@@ -48,6 +49,7 @@ export function PublishDialog({
   onClose: () => void;
   onPublished: (version: number) => void;
 }) {
+  const ws = useWorkspace();
   const [checking, setChecking] = useState(false);
   const [problems, setProblems] = useState<DefinitionError[]>([]);
   const [changes, setChanges] = useState<Change[]>([]);
@@ -63,12 +65,12 @@ export function PublishDialog({
     setAcknowledged(false);
     (async () => {
       // Publish what is on screen: save pending edits first.
-      if (useBuilder.getState().saveStatus !== "saved" && !(await saveNow(formKey))) {
+      if (useBuilder.getState().saveStatus !== "saved" && !(await saveNow(ws.manage, formKey))) {
         if (!cancelled) setError("The latest changes could not be saved. Resolve that first.");
         return;
       }
       const result = await api<{ problems: DefinitionError[]; changes: Change[] }>(
-        `/v1/manage/forms/${formKey}/working-copy/check`,
+        `${ws.manage}/forms/${formKey}/working-copy/check`,
       );
       if (cancelled) return;
       setProblems(result.problems);
@@ -86,7 +88,7 @@ export function PublishDialog({
     setError(null);
     try {
       const result = await api<{ version: number }>(
-        `/v1/manage/forms/${formKey}/working-copy/publish`,
+        `${ws.manage}/forms/${formKey}/working-copy/publish`,
         {
           method: "POST",
           body: { revision: useBuilder.getState().revision, acknowledgeChanges: acknowledged },

@@ -15,8 +15,9 @@ First release. Images: `ghcr.io/liuyfly/formkiln-admin:0.1.0`,
 
 ### Admin
 
-- Invitation-only sign-in with password and authenticator app, members and roles, sessions,
-  audit log.
+- Invitation-only sign-in with password and authenticator app, sessions.
+- Workspaces for teams: every page lives under `/w/<workspace>/...`, with a workspace switcher;
+  members, roles, audit log and erasure requests per workspace.
 - Form builder: palette, canvas with drag and drop and nesting, inspector, visual logic editor
   for conditions and calculations, live preview, undo and redo, checks before publishing,
   version comparison, templates, duplicating forms. JSON view for advanced edits.
@@ -26,7 +27,7 @@ First release. Images: `ghcr.io/liuyfly/formkiln-admin:0.1.0`,
 
 ### Hosted fill-in site
 
-- Public pages at `/f/<form key>`, rendered with `@formkiln/react`; signed links and iframe
+- Public pages at `/f/<workspace>/<form key>`, rendered with `@formkiln/react`; signed links and iframe
   embedding (`FORMKILN_FRAME_ANCESTORS`).
 - Drafts and "continue later" links by email, file uploads, Cloudflare Turnstile, PDF receipt
   after submitting. English and Simplified Chinese interface.

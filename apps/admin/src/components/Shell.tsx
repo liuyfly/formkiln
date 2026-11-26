@@ -16,12 +16,14 @@ import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
+import MenuItem from "@mui/material/MenuItem";
+import TextField from "@mui/material/TextField";
 import Toolbar from "@mui/material/Toolbar";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import NextLink from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { api, type User } from "../lib/api";
 
 const DRAWER_WIDTH = 232;
@@ -39,27 +41,63 @@ interface NavItem {
   href: string;
   label: string;
   icon: ReactNode;
-  adminOnly?: boolean;
+  /** Who sees it: every member, workspace admins, or also instance admins who are not members. */
+  access: "member" | "admin" | "adminOrInstance";
 }
 
-const NAV: NavItem[] = [
-  { href: "/forms", label: "Forms", icon: <DescriptionOutlined /> },
-  { href: "/members", label: "Members", icon: <GroupOutlined />, adminOnly: true },
-  { href: "/audit", label: "Audit log", icon: <HistoryOutlined />, adminOnly: true },
+/** Pages of a workspace (under `/w/{slug}`). */
+const WORKSPACE_NAV: NavItem[] = [
+  { href: "/forms", label: "Forms", icon: <DescriptionOutlined />, access: "member" },
+  { href: "/members", label: "Members", icon: <GroupOutlined />, access: "adminOrInstance" },
+  { href: "/audit", label: "Audit log", icon: <HistoryOutlined />, access: "adminOrInstance" },
   {
     href: "/data-requests",
     label: "Data requests",
     icon: <PersonRemoveOutlined />,
-    adminOnly: true,
+    access: "admin",
   },
-  { href: "/settings", label: "Settings", icon: <SettingsOutlined /> },
 ];
+
+const ACCOUNT_NAV: NavItem[] = [
+  { href: "/settings", label: "Settings", icon: <SettingsOutlined />, access: "member" },
+];
+
+/** The workspace slug of a console path (`/w/{slug}/...`), if any. */
+function workspaceOf(pathname: string): string | null {
+  return /^\/w\/([^/]+)/.exec(pathname)?.[1] ?? null;
+}
+
+/** The workspace to show in the navigation: the one open, else the last one used. */
+function useCurrentWorkspace(user: User, pathname: string): string | null {
+  const fromPath = workspaceOf(pathname);
+  const [last, setLast] = useState<string | null>(null);
+  useEffect(() => {
+    if (fromPath) setLast(fromPath);
+  }, [fromPath]);
+  return fromPath ?? last ?? user.workspaces[0]?.slug ?? null;
+}
 
 /** Console frame: navigation drawer, top bar with the member and sign-out. */
 export function Shell({ user, children }: { user: User; children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const current = useCurrentWorkspace(user, pathname);
+  const membership = user.workspaces.find((w) => w.slug === current) ?? null;
+  const role = membership?.role ?? null;
+  const visible = (item: NavItem) =>
+    item.access === "member"
+      ? membership !== null
+      : role === "admin" || (item.access === "adminOrInstance" && user.instanceAdmin);
+  const items = [
+    ...(current
+      ? WORKSPACE_NAV.filter(visible).map((item) => ({
+          ...item,
+          href: `/w/${current}${item.href}`,
+        }))
+      : []),
+    ...ACCOUNT_NAV,
+  ];
 
   const signOut = async () => {
     await api("/v1/admin/auth/logout", { method: "POST" }).catch(() => undefined);
@@ -75,8 +113,35 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
         </Typography>
       </Toolbar>
       <Divider />
+      {user.workspaces.length > 0 && (
+        <Box sx={{ px: 2, pt: 2, pb: 1 }}>
+          <TextField
+            select
+            size="small"
+            fullWidth
+            label="Workspace"
+            value={current ?? ""}
+            onChange={(event) => {
+              setOpen(false);
+              router.push(`/w/${event.target.value}/forms`);
+            }}
+          >
+            {current && !membership && (
+              <MenuItem value={current} disabled>
+                {current}
+              </MenuItem>
+            )}
+            {user.workspaces.map((w) => (
+              <MenuItem key={w.slug} value={w.slug}>
+                {w.name}
+                {w.archived ? " (archived)" : ""}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+      )}
       <List component="nav" aria-label="Main" sx={{ px: 1 }}>
-        {NAV.filter((item) => !item.adminOnly || user.role === "admin").map((item) => {
+        {items.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <ListItemButton
@@ -126,7 +191,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
                 {user.email}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {user.role}
+                {role ?? (user.instanceAdmin ? "instance admin" : "")}
               </Typography>
             </Box>
             <Tooltip title="Sign out">

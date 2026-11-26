@@ -3,7 +3,7 @@
 #   cp .env.example .env    # then set FORMKILN_ENCRYPTION_KEY and the admin email
 #   docker compose --profile mailpit up -d
 #
-# Admin: http://localhost:3200   Hosted forms: http://localhost:3100/f/<key>
+# Admin: http://localhost:3200   Hosted forms: http://localhost:3100/f/<workspace>/<key>
 # Emails (with the mailpit profile): http://localhost:8025
 #
 # For production, put the admin and hosted ports behind an HTTPS reverse proxy that appends the

@@ -10,6 +10,7 @@ import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
 import { useEffect, useState, type FormEvent } from "react";
 import { api, errorMessage, type Folder } from "../lib/api";
+import { useWorkspace } from "../lib/workspace";
 
 /** Creates a folder, or renames `folder`. */
 export function FolderNameDialog({
@@ -23,6 +24,7 @@ export function FolderNameDialog({
   onClose: () => void;
   onSaved: (folder: Folder) => void;
 }) {
+  const ws = useWorkspace();
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -38,7 +40,7 @@ export function FolderNameDialog({
     setError(null);
     try {
       const saved = await api<Folder>(
-        folder ? `/v1/manage/folders/${folder.id}` : "/v1/manage/folders",
+        folder ? `${ws.manage}/folders/${folder.id}` : `${ws.manage}/folders`,
         {
           method: folder ? "PATCH" : "POST",
           body: { name },
@@ -99,6 +101,7 @@ export function MoveFormDialog({
   onClose: () => void;
   onMoved: (folderId: string | null) => void;
 }) {
+  const ws = useWorkspace();
   const [folders, setFolders] = useState<Folder[] | null>(null);
   const [target, setTarget] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -107,7 +110,7 @@ export function MoveFormDialog({
     if (formKey === null) return;
     setTarget(folderId ?? "");
     setError(null);
-    api<Folder[]>("/v1/manage/folders").then(setFolders, (failure) =>
+    api<Folder[]>(`${ws.manage}/folders`).then(setFolders, (failure) =>
       setError(errorMessage(failure)),
     );
   }, [formKey, folderId]);
@@ -119,7 +122,10 @@ export function MoveFormDialog({
     setError(null);
     try {
       const next = target === "" ? null : target;
-      await api(`/v1/manage/forms/${formKey}/folder`, { method: "PUT", body: { folderId: next } });
+      await api(`${ws.manage}/forms/${formKey}/folder`, {
+        method: "PUT",
+        body: { folderId: next },
+      });
       onMoved(next);
       onClose();
     } catch (failure) {

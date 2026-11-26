@@ -4,6 +4,7 @@ import type { FormDocument } from "@formkiln/spec";
 import { useEffect, useRef } from "react";
 import { ApiError, api, type DefinitionError } from "../lib/api";
 import { useBuilder } from "./store";
+import { useWorkspace } from "../lib/workspace";
 
 export const AUTOSAVE_DELAY_MS = 1500;
 
@@ -19,6 +20,7 @@ export interface SavedCopy {
 
 /** Saves the document to the working copy after edits settle. Conflicts stop autosaving. */
 export function useAutosave(formKey: string, enabled: boolean) {
+  const { manage } = useWorkspace();
   const version = useBuilder((state) => state.version);
   const saveStatus = useBuilder((state) => state.saveStatus);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -29,11 +31,11 @@ export function useAutosave(formKey: string, enabled: boolean) {
     const state = useBuilder.getState();
     if (state.saveStatus === "saved") return;
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => void saveNow(formKey, inFlight), AUTOSAVE_DELAY_MS);
+    timer.current = setTimeout(() => void saveNow(manage, formKey, inFlight), AUTOSAVE_DELAY_MS);
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [formKey, enabled, version, saveStatus]);
+  }, [manage, formKey, enabled, version, saveStatus]);
 
   // Warn before leaving with unsaved edits.
   useEffect(() => {
@@ -48,13 +50,17 @@ export function useAutosave(formKey: string, enabled: boolean) {
 }
 
 /** Saves the current document now; resolves when done. */
-export async function saveNow(formKey: string, inFlight?: { current: boolean }): Promise<boolean> {
+export async function saveNow(
+  manage: string,
+  formKey: string,
+  inFlight?: { current: boolean },
+): Promise<boolean> {
   if (inFlight?.current) return false;
   if (inFlight) inFlight.current = true;
   const { document, revision, version, setSaveStatus, saved } = useBuilder.getState();
   setSaveStatus("saving");
   try {
-    const copy = await api<SavedCopy>(`/v1/manage/forms/${formKey}/working-copy`, {
+    const copy = await api<SavedCopy>(`${manage}/forms/${formKey}/working-copy`, {
       method: "PUT",
       body: { revision, document },
     });

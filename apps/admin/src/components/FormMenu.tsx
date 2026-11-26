@@ -12,7 +12,7 @@ import { useState } from "react";
 import { api, canEdit, errorMessage, isAdmin } from "../lib/api";
 import { ConfirmDialog, type Confirmation } from "./ConfirmDialog";
 import { MoveFormDialog } from "./FolderDialogs";
-import { useUser } from "./Shell";
+import { useWorkspace } from "../lib/workspace";
 
 /** The text of the archive confirmation: what happens, and that nothing is lost. */
 export function archiveConfirmation(formKey: string, run: () => Promise<void>): Confirmation {
@@ -44,19 +44,19 @@ export function FormMenu({
   onArchived: () => void;
   onError: (message: string) => void;
 }) {
-  const user = useUser();
+  const ws = useWorkspace();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [moving, setMoving] = useState(false);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [busy, setBusy] = useState(false);
-  if (!canEdit(user) && !isAdmin(user)) return null;
+  if (!canEdit(ws) && !isAdmin(ws)) return null;
 
   const archive = () =>
     setConfirmation(
       archiveConfirmation(formKey, async () => {
         setBusy(true);
         try {
-          await api(`/v1/manage/forms/${formKey}/archive`, { method: "POST" });
+          await api(`${ws.manage}/forms/${formKey}/archive`, { method: "POST" });
           setConfirmation(null);
           onArchived();
         } catch (failure) {
@@ -77,7 +77,7 @@ export function FormMenu({
         <MoreVert />
       </IconButton>
       <Menu anchorEl={anchor} open={anchor !== null} onClose={() => setAnchor(null)}>
-        {canEdit(user) && (
+        {canEdit(ws) && (
           <MenuItem
             onClick={() => {
               setAnchor(null);
@@ -90,7 +90,7 @@ export function FormMenu({
             <ListItemText>Move to folder…</ListItemText>
           </MenuItem>
         )}
-        {isAdmin(user) && (
+        {isAdmin(ws) && (
           <MenuItem
             onClick={() => {
               setAnchor(null);

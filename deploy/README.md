@@ -6,7 +6,7 @@ Formkiln runs as three containers plus PostgreSQL:
 | -------- | --------------------------------- | ---- | ----------------------------------------------------------- |
 | `server` | `ghcr.io/liuyfly/formkiln-server` | 8080 | API, validation, storage, webhooks, accounts (keep private) |
 | `admin`  | `ghcr.io/liuyfly/formkiln-admin`  | 3200 | Back office for your team (internal network or VPN)         |
-| `hosted` | `ghcr.io/liuyfly/formkiln-hosted` | 3100 | Public fill-in pages `/f/<form key>`                        |
+| `hosted` | `ghcr.io/liuyfly/formkiln-hosted` | 3100 | Public fill-in pages `/f/<workspace>/<form key>`            |
 
 Tags: releases are tagged `1.2.3`, `1.2` and `latest`; `edge` follows `main`. Run the same
 version of all three images. The compose file defaults to `0.1` (the latest 0.1.x); see the
@@ -26,7 +26,7 @@ docker compose --profile mailpit up -d
    admin (password and authenticator app).
 2. Sign in at http://localhost:3200 and publish a form document (for example
    [`packages/spec/examples/rental-application.json`](../packages/spec/examples/rental-application.json)).
-3. Fill it in at http://localhost:3100/f/rentalApplication.
+3. Fill it in at http://localhost:3100/f/default/rentalApplication.
 
 ## Production checklist
 

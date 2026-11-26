@@ -49,6 +49,7 @@ import { keysById } from "./ids";
 import { textIn } from "./inputs";
 import { elementKeys, locOfPointer } from "./tree";
 import { saveNow, useAutosave, type SavedCopy } from "./useAutosave";
+import { useWorkspace } from "../lib/workspace";
 
 type View = "design" | "preview" | "json" | "changes";
 
@@ -73,11 +74,12 @@ function isTyping(target: EventTarget | null): boolean {
 
 /** The working copy compared with the live version. */
 function PublishedChanges({ formKey, version }: { formKey: string; version: number }) {
+  const ws = useWorkspace();
   const document = useBuilder((state) => state.document);
   const [published, setPublished] = useState<FormDocument | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    api<{ definition: FormDocument }>(`/v1/manage/forms/${formKey}/versions/${version}`).then(
+    api<{ definition: FormDocument }>(`${ws.manage}/forms/${formKey}/versions/${version}`).then(
       (result) => setPublished(result.definition),
       (failure) => setError(errorMessage(failure)),
     );
@@ -96,8 +98,9 @@ function PublishedChanges({ formKey, version }: { formKey: string; version: numb
 
 /** The form builder for one form's working copy. */
 export function Builder({ formKey }: { formKey: string }) {
+  const ws = useWorkspace();
   const user = useUser();
-  const readOnly = !canEdit(user);
+  const readOnly = !canEdit(ws);
   const router = useRouter();
   const [copy, setCopy] = useState<SavedCopy | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -114,7 +117,7 @@ export function Builder({ formKey }: { formKey: string }) {
 
   const load = useCallback(async () => {
     try {
-      const current = await api<SavedCopy>(`/v1/manage/forms/${formKey}/working-copy`);
+      const current = await api<SavedCopy>(`${ws.manage}/forms/${formKey}/working-copy`);
       setCopy(current);
       useBuilder.getState().load(current.document, current.revision, current.problems);
       loaded.current = true;
@@ -134,7 +137,9 @@ export function Builder({ formKey }: { formKey: string }) {
       useBuilder.getState().setPublished(new Set(), new Map());
       return;
     }
-    api<{ definition: FormDocument }>(`/v1/manage/forms/${formKey}/versions/${latestVersion}`).then(
+    api<{ definition: FormDocument }>(
+      `${ws.manage}/forms/${formKey}/versions/${latestVersion}`,
+    ).then(
       (result) =>
         useBuilder
           .getState()
@@ -185,11 +190,11 @@ export function Builder({ formKey }: { formKey: string }) {
   const resolveConflict = async (keepMine: boolean) => {
     setBusy(true);
     try {
-      const current = await api<SavedCopy>(`/v1/manage/forms/${formKey}/working-copy`);
+      const current = await api<SavedCopy>(`${ws.manage}/forms/${formKey}/working-copy`);
       if (keepMine) {
         // Save my document over the revision that is there now.
         useBuilder.setState({ revision: current.revision, saveStatus: "dirty" });
-        await saveNow(formKey);
+        await saveNow(ws.manage, formKey);
       } else {
         setCopy(current);
         useBuilder.getState().load(current.document, current.revision, current.problems);
@@ -212,7 +217,7 @@ export function Builder({ formKey }: { formKey: string }) {
           <Tooltip title="Back to the form">
             <IconButton
               component={NextLink}
-              href={copy.latestVersion ? `/forms/${formKey}` : "/forms"}
+              href={ws.href(copy.latestVersion ? `/forms/${formKey}` : "/forms")}
               aria-label="Back"
             >
               <ArrowBack />
@@ -237,7 +242,9 @@ export function Builder({ formKey }: { formKey: string }) {
               color={status.color}
               variant="outlined"
               label={status.label}
-              onClick={store.saveStatus === "error" ? () => void saveNow(formKey) : undefined}
+              onClick={
+                store.saveStatus === "error" ? () => void saveNow(ws.manage, formKey) : undefined
+              }
             />
           )}
           {store.problems.length > 0 && (
@@ -298,7 +305,7 @@ export function Builder({ formKey }: { formKey: string }) {
                   danger: true,
                   run: async () => {
                     try {
-                      await api(`/v1/manage/forms/${formKey}/working-copy`, { method: "DELETE" });
+                      await api(`${ws.manage}/forms/${formKey}/working-copy`, { method: "DELETE" });
                       await load();
                       setNotice({ severity: "success", text: "The changes were discarded." });
                     } catch (failure) {
@@ -326,7 +333,7 @@ export function Builder({ formKey }: { formKey: string }) {
                 void summary.reload();
                 setNotice({ severity: "success", text: "The form was moved." });
               }}
-              onArchived={() => router.push("/forms?view=archived")}
+              onArchived={() => router.push(ws.href("/forms?view=archived"))}
               onError={(text) => setNotice({ severity: "error", text })}
             />
           )}
@@ -470,7 +477,7 @@ export function Builder({ formKey }: { formKey: string }) {
           setPublishing(false);
           useBuilder.getState().setSaveStatus("saved");
           setNotice({ severity: "success", text: `Version ${version} is live.` });
-          router.push(`/forms/${formKey}/versions`);
+          router.push(ws.href(`/forms/${formKey}/versions`));
         }}
       />
       <ConfirmDialog

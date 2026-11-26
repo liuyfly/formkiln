@@ -14,7 +14,7 @@ test("lists forms and their submissions", async ({ page }) => {
     consent: true,
   });
 
-  await page.goto("/forms");
+  await page.goto("/w/default/forms");
   await expect(page.getByRole("heading", { name: "Forms", level: 1 })).toBeVisible();
   // The list and the page show the title, with the key beside it.
   await page.getByRole("link", { name: "Contact us" }).click();
@@ -58,17 +58,17 @@ test.describe("signed out", () => {
 
 for (const path of [
   "/",
-  "/forms",
-  "/forms/e2eContact",
-  "/forms/e2eContact/versions",
-  "/forms/e2eContact/sharing",
-  "/forms/e2eContact/webhooks",
-  "/forms/e2eContact/notifications",
-  "/forms/e2eContact/data",
-  "/forms/e2eContact/edit",
-  "/members",
-  "/audit",
-  "/data-requests",
+  "/w/default/forms",
+  "/w/default/forms/e2eContact",
+  "/w/default/forms/e2eContact/versions",
+  "/w/default/forms/e2eContact/sharing",
+  "/w/default/forms/e2eContact/webhooks",
+  "/w/default/forms/e2eContact/notifications",
+  "/w/default/forms/e2eContact/data",
+  "/w/default/forms/e2eContact/edit",
+  "/w/default/members",
+  "/w/default/audit",
+  "/w/default/data-requests",
   "/settings",
 ]) {
   test(`${path} is accessible`, async ({ page }) => {

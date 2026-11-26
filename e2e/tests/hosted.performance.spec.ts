@@ -35,7 +35,7 @@ async function inputToVisible(page: Page, i: number): Promise<number> {
 
 test("a large form stays responsive", async ({ page }) => {
   const started = Date.now();
-  await page.goto("/f/e2eLarge");
+  await page.goto("/f/default/e2eLarge");
   await expect(page.getByRole("textbox", { name: /^Amount 300\b/ })).toBeVisible();
   const loaded = Date.now() - started;
 
