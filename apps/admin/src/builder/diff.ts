@@ -260,9 +260,20 @@ export function diffDocuments(before: FormDocument, after: FormDocument): Docume
 
   const a = index(before);
   const b = index(after);
+  // The same element under another key (Form Schema §5.6): a rename, not a removal and an addition.
+  const byId = new Map<string, string>();
+  for (const [path, located] of a) if (located.element.id) byId.set(located.element.id, path);
+  const renamedFrom = new Map<string, string>();
+  for (const [path, located] of b) {
+    const old = located.element.id ? byId.get(located.element.id) : undefined;
+    if (old !== undefined && old !== path && !b.has(old) && !a.has(path))
+      renamedFrom.set(path, old);
+  }
+  const renamed = new Set(renamedFrom.values());
   const elements: Change[] = [];
   for (const [path, located] of b) {
-    const previous = a.get(path);
+    const from = renamedFrom.get(path);
+    const previous = from !== undefined ? a.get(from) : a.get(path);
     if (!previous)
       elements.push({
         kind: "added",
@@ -271,6 +282,7 @@ export function diffDocuments(before: FormDocument, after: FormDocument): Docume
       });
     else {
       const lines = elementDetails(previous, located, locale);
+      if (from !== undefined) lines.unshift(`Key renamed from ${from} to ${path}`);
       if (lines.length)
         elements.push({
           kind: "changed",
@@ -280,7 +292,7 @@ export function diffDocuments(before: FormDocument, after: FormDocument): Docume
     }
   }
   for (const [path, located] of a) {
-    if (!b.has(path))
+    if (!b.has(path) && !renamed.has(path))
       elements.push({
         kind: "removed",
         subject: describeElement(located.element, path, locale),

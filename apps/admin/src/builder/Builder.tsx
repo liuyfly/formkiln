@@ -43,6 +43,7 @@ import { Palette } from "./Palette";
 import { Preview } from "./Preview";
 import { PublishDialog } from "./PublishDialog";
 import { useBuilder, type SaveStatus } from "./store";
+import { keysById } from "./ids";
 import { elementKeys, locOfPointer } from "./tree";
 import { saveNow, useAutosave, type SavedCopy } from "./useAutosave";
 
@@ -125,11 +126,14 @@ export function Builder({ formKey }: { formKey: string }) {
   const latestVersion = copy?.latestVersion ?? null;
   useEffect(() => {
     if (latestVersion === null) {
-      useBuilder.getState().setPublishedKeys(new Set());
+      useBuilder.getState().setPublished(new Set(), new Map());
       return;
     }
     api<{ definition: FormDocument }>(`/v1/manage/forms/${formKey}/versions/${latestVersion}`).then(
-      (result) => useBuilder.getState().setPublishedKeys(elementKeys(result.definition)),
+      (result) =>
+        useBuilder
+          .getState()
+          .setPublished(elementKeys(result.definition), keysById(result.definition)),
       () => undefined, // Only refines the rename warnings.
     );
   }, [formKey, latestVersion]);

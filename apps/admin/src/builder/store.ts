@@ -6,6 +6,7 @@
 import type { Element, FormDocument } from "@formkiln/spec";
 import { enableMapSet, produce, type Draft } from "immer";
 import { create } from "zustand";
+import { ensureIds } from "./ids";
 import type { DefinitionError } from "../lib/api";
 import {
   childrenOf,
@@ -50,6 +51,8 @@ interface State {
   version: number;
   /** Element keys of the latest published version (empty before the first publication). */
   publishedKeys: ReadonlySet<string>;
+  /** Element ids of the latest published version, with their keys there. */
+  publishedKeysById: ReadonlyMap<string, string>;
 }
 
 interface Actions {
@@ -74,15 +77,17 @@ interface Actions {
   movePage: (page: number, delta: -1 | 1) => void;
   saved: (revision: number, problems: DefinitionError[], version: number) => void;
   setSaveStatus: (status: SaveStatus) => void;
-  setPublishedKeys: (keys: ReadonlySet<string>) => void;
+  setPublished: (keys: ReadonlySet<string>, keysById: ReadonlyMap<string, string>) => void;
 }
 
 export type BuilderStore = State & Actions;
 
 export const useBuilder = create<BuilderStore>()((set, get) => {
   /** Applies a document change and records it for undo. */
-  const commit = (next: FormDocument, extra: Partial<State> = {}, coalesce?: string) => {
+  const commit = (proposed: FormDocument, extra: Partial<State> = {}, coalesce?: string) => {
     const state = get();
+    // New, copied and pasted elements get their ids here (Form Schema §5.6).
+    const next = ensureIds(proposed);
     if (next === state.document) {
       if (Object.keys(extra).length) set(extra);
       return;
@@ -121,10 +126,12 @@ export const useBuilder = create<BuilderStore>()((set, get) => {
     problems: [],
     version: 0,
     publishedKeys: new Set(),
+    publishedKeysById: new Map(),
 
     load: (document, revision, problems) =>
       set({
-        document,
+        // In memory only: the ids are saved with the first edit, so opening a form changes nothing.
+        document: ensureIds(document),
         revision,
         problems,
         selection: { kind: "form" },
@@ -301,7 +308,7 @@ export const useBuilder = create<BuilderStore>()((set, get) => {
       })),
 
     setSaveStatus: (saveStatus) => set({ saveStatus }),
-    setPublishedKeys: (publishedKeys) => set({ publishedKeys }),
+    setPublished: (publishedKeys, publishedKeysById) => set({ publishedKeys, publishedKeysById }),
   };
 });
 

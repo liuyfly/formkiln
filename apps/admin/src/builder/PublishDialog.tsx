@@ -18,7 +18,7 @@ import { useBuilder } from "./store";
 import { saveNow } from "./useAutosave";
 
 interface Change {
-  kind: "fieldRemoved" | "typeChanged" | "optionsRemoved";
+  kind: "fieldRemoved" | "fieldRenamed" | "typeChanged" | "optionsRemoved";
   path: string;
   detail: { from?: string; to?: string; values?: string[] };
 }
@@ -27,6 +27,8 @@ function describe(change: Change): string {
   switch (change.kind) {
     case "fieldRemoved":
       return `“${change.path}” is removed. Existing answers stay in old submissions but are no longer collected.`;
+    case "fieldRenamed":
+      return `“${change.path}” is renamed to “${change.detail.to}”. Exports keep one column; webhooks and the API use the new name for new submissions.`;
     case "typeChanged":
       return `“${change.path}” changes from ${change.detail.from} to ${change.detail.to}. Integrations reading it may break.`;
     case "optionsRemoved":
