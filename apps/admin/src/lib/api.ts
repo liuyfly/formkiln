@@ -136,6 +136,8 @@ export function isFormKey(value: string): boolean {
 
 export interface FormSummary {
   key: string;
+  /** Title in the form's default language (of the latest edits); null when unknown. */
+  title: string | null;
   accessMode: "public" | "token";
   /** Null until the form is published. */
   latestVersion: number | null;

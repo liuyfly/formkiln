@@ -16,8 +16,10 @@ test("lists forms and their submissions", async ({ page }) => {
 
   await page.goto("/forms");
   await expect(page.getByRole("heading", { name: "Forms", level: 1 })).toBeVisible();
-  await page.getByRole("link", { name: "e2eContact" }).click();
-  await expect(page.getByRole("heading", { name: "e2eContact", level: 1 })).toBeVisible();
+  // The list and the page show the title, with the key beside it.
+  await page.getByRole("link", { name: "Contact us" }).click();
+  await expect(page.getByRole("heading", { name: "Contact us", level: 1 })).toBeVisible();
+  await expect(page.getByText("e2eContact", { exact: true })).toBeVisible();
   // Submissions is the first tab.
   await expect(page.getByText(marker).first()).toBeVisible();
 });

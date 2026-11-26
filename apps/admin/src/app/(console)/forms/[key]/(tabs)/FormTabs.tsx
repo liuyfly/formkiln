@@ -64,9 +64,16 @@ export function FormTabs({ formKey }: { formKey: string }) {
         )}
       </Breadcrumbs>
       <Stack direction="row" sx={{ alignItems: "center", mt: 0.5, mb: 2, gap: 2 }}>
-        <Typography variant="h5" component="h1" sx={{ fontWeight: 600, flexGrow: 1 }}>
-          {formKey}
-        </Typography>
+        <Stack sx={{ flexGrow: 1, minWidth: 0 }}>
+          <Typography variant="h5" component="h1" sx={{ fontWeight: 600 }}>
+            {form?.title || formKey}
+          </Typography>
+          {form?.title && (
+            <Typography variant="body2" color="text.secondary" sx={{ fontFamily: "monospace" }}>
+              {formKey}
+            </Typography>
+          )}
+        </Stack>
         {editor && !archived && (
           <Button
             variant="outlined"
