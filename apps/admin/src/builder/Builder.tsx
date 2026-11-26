@@ -43,6 +43,8 @@ import { Palette } from "./Palette";
 import { Preview } from "./Preview";
 import { PublishDialog } from "./PublishDialog";
 import { useBuilder, type SaveStatus } from "./store";
+import { FormMenu } from "../components/FormMenu";
+import { useFormSummary } from "../lib/useFormSummary";
 import { keysById } from "./ids";
 import { elementKeys, locOfPointer } from "./tree";
 import { saveNow, useAutosave, type SavedCopy } from "./useAutosave";
@@ -105,6 +107,8 @@ export function Builder({ formKey }: { formKey: string }) {
   const [problemsAnchor, setProblemsAnchor] = useState<HTMLElement | null>(null);
   const [busy, setBusy] = useState(false);
   const store = useBuilder();
+  const summary = useFormSummary(formKey);
+  const archived = summary.form?.archivedAt != null;
   const loaded = useRef(false);
 
   const load = useCallback(async () => {
@@ -301,12 +305,31 @@ export function Builder({ formKey }: { formKey: string }) {
             </Button>
           )}
           {!readOnly && (
-            <Button variant="contained" onClick={() => setPublishing(true)}>
+            <Button variant="contained" onClick={() => setPublishing(true)} disabled={archived}>
               Publish
             </Button>
           )}
+          {summary.form && !archived && (
+            <FormMenu
+              formKey={formKey}
+              folderId={summary.form.folderId}
+              onMoved={() => {
+                void summary.reload();
+                setNotice({ severity: "success", text: "The form was moved." });
+              }}
+              onArchived={() => router.push("/forms?view=archived")}
+              onError={(text) => setNotice({ severity: "error", text })}
+            />
+          )}
         </Stack>
       </Paper>
+
+      {archived && (
+        <Alert severity="warning">
+          This form is archived: it cannot be published, and respondents cannot open it. An admin
+          can restore it from Archived forms.
+        </Alert>
+      )}
 
       {outdated && (
         <Alert severity="info">

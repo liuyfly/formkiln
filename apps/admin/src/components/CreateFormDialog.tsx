@@ -38,10 +38,12 @@ interface Props {
   onClose: () => void;
   /** Duplicate this form (its current working copy) instead of offering templates. */
   duplicateOf?: string;
+  /** Create the form in this folder. */
+  folderId?: string | null;
 }
 
 /** Creates a form: blank, from a template, or as a copy of another form; then opens the builder. */
-export function CreateFormDialog({ open, onClose, duplicateOf }: Props) {
+export function CreateFormDialog({ open, onClose, duplicateOf, folderId }: Props) {
   const router = useRouter();
   const [template, setTemplate] = useState("blank");
   const [title, setTitle] = useState("");
@@ -82,6 +84,9 @@ export function CreateFormDialog({ open, onClose, duplicateOf }: Props) {
           ...(document && { document, source }),
         },
       });
+      if (folderId) {
+        await api(`/v1/manage/forms/${key}/folder`, { method: "PUT", body: { folderId } });
+      }
       router.push(`/forms/${key}/edit`);
     } catch (failure) {
       setError(errorMessage(failure));
