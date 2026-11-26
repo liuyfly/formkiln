@@ -43,7 +43,7 @@ import { Palette } from "./Palette";
 import { Preview } from "./Preview";
 import { PublishDialog } from "./PublishDialog";
 import { useBuilder, type SaveStatus } from "./store";
-import { locOfPointer } from "./tree";
+import { elementKeys, locOfPointer } from "./tree";
 import { saveNow, useAutosave, type SavedCopy } from "./useAutosave";
 
 type View = "design" | "preview" | "json" | "changes";
@@ -120,6 +120,19 @@ export function Builder({ formKey }: { formKey: string }) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Keys of the live version: renaming them splits the data of existing and new submissions.
+  const latestVersion = copy?.latestVersion ?? null;
+  useEffect(() => {
+    if (latestVersion === null) {
+      useBuilder.getState().setPublishedKeys(new Set());
+      return;
+    }
+    api<{ definition: FormDocument }>(`/v1/manage/forms/${formKey}/versions/${latestVersion}`).then(
+      (result) => useBuilder.getState().setPublishedKeys(elementKeys(result.definition)),
+      () => undefined, // Only refines the rename warnings.
+    );
+  }, [formKey, latestVersion]);
 
   useAutosave(formKey, loaded.current && !readOnly);
 

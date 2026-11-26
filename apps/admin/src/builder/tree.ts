@@ -81,6 +81,20 @@ export function usedKeys(doc: FormDocument): Set<string> {
 }
 
 /** `base`, `base2`, `base3`... the first that is not used. */
+/** Keys of every element (not pages or outcomes). */
+export function elementKeys(doc: FormDocument): Set<string> {
+  const keys = new Set<string>();
+  const visit = (elements: Element[]) => {
+    for (const element of elements) {
+      keys.add(element.key);
+      const children = childrenOf(element);
+      if (children) visit(children);
+    }
+  };
+  for (const page of doc.pages) visit(page.elements);
+  return keys;
+}
+
 export function uniqueKey(doc: FormDocument, base: string): string {
   const keys = usedKeys(doc);
   if (!keys.has(base)) return base;
