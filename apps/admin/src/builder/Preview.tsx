@@ -10,6 +10,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { Component, useState, type ReactNode } from "react";
 import { textIn } from "./inputs";
+import { usesWidths } from "./tree";
 import { useBuilder } from "./store";
 
 class PreviewBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
@@ -41,7 +42,10 @@ export function Preview() {
   const [locale, setLocale] = useState(document.settings?.defaultLocale ?? "en");
   const [submitted, setSubmitted] = useState<string | null>(null);
   return (
-    <Box sx={{ maxWidth: 720, mx: "auto" }}>
+    // A fixed width: in the builder's flex column, auto margins alone would shrink the preview to
+    // the content of the current page, so pages of one form came out at different widths. As
+    // wide as the hosted card (60rem for multi-column forms, Form Schema §5.5).
+    <Box sx={{ width: "100%", maxWidth: usesWidths(document) ? 960 : 720, mx: "auto" }}>
       <Stack direction="row" spacing={2} sx={{ alignItems: "center", mb: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
           Preview of the unsaved form. Submitting only checks the answers.
