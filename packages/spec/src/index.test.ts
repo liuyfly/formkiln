@@ -63,7 +63,7 @@ describe("form schema v1", () => {
     expect(validateForm(variant(mutate))).toBe(false);
   });
 
-  it("accepts a layout grid and element widths", () => {
+  it("accepts a layout grid, element widths and element ids", () => {
     const doc = variant((d: any) => {
       d.settings.layout = { columns: 4 };
       d.pages[0].elements[0].width = 4; // content
@@ -71,6 +71,8 @@ describe("form schema v1", () => {
       d.pages[1].elements[2].width = 3; // repeater
       d.pages[1].elements[2].elements[0].width = 1; // field in a repeater item
       d.pages[2].elements[1].width = 2; // panel
+      d.pages[0].elements[1].id = "k3x9q2";
+      d.pages[1].elements[2].elements[0].id = "item_address-1";
     });
     expect(validateForm(doc)).toBe(true);
   });
@@ -80,6 +82,10 @@ describe("form schema v1", () => {
     ["a width of 13", (d: any) => (d.pages[0].elements[1].width = 13)],
     ["a fractional width", (d: any) => (d.pages[0].elements[1].width = 1.5)],
     ["a width given as text", (d: any) => (d.pages[0].elements[1].width = "half")],
+    ["an empty id", (d: any) => (d.pages[0].elements[1].id = "")],
+    ["an id with a space", (d: any) => (d.pages[0].elements[1].id = "a b")],
+    ["a numeric id", (d: any) => (d.pages[0].elements[1].id = 7)],
+    ["an id on a page", (d: any) => (d.pages[0].id = "p1")],
     ["a width on a page", (d: any) => (d.pages[0].width = 1)],
     ["0 columns", (d: any) => (d.settings.layout = { columns: 0 })],
     ["13 columns", (d: any) => (d.settings.layout = { columns: 13 })],

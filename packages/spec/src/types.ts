@@ -121,6 +121,8 @@ export interface Page {
 }
 
 interface ElementBase {
+  /** Stable identifier across versions and key changes (docs/form-schema-v1.md §5.6). */
+  id?: string;
   key: Key;
   visible?: Condition;
   /** Columns spanned on the container's grid (docs/form-schema-v1.md §5.5). Default: all. */
@@ -284,6 +286,7 @@ export const DEFINITION_ERROR_CODES = [
   "requiredParts",
   "validatorType",
   "width",
+  "duplicateId",
 ] as const;
 
 export type DefinitionErrorCode = (typeof DEFINITION_ERROR_CODES)[number];
