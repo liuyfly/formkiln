@@ -53,6 +53,11 @@
       "type": "string",
       "pattern": "^[a-z][a-zA-Z0-9_]{0,63}$"
     },
+    "elementId": {
+      "description": "Stable identifier of an element across versions and key changes (§5.6). Never part of answers.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+    },
     "width": {
       "description": "Columns the element spans on its container's grid (§5.5); at most settings.layout.columns.",
       "type": "integer",
@@ -260,6 +265,9 @@
         "type": {
           "const": "content"
         },
+        "id": {
+          "$ref": "#/$defs/elementId"
+        },
         "key": {
           "$ref": "#/$defs/key"
         },
@@ -287,6 +295,9 @@
       "properties": {
         "type": {
           "const": "panel"
+        },
+        "id": {
+          "$ref": "#/$defs/elementId"
         },
         "key": {
           "$ref": "#/$defs/key"
@@ -322,6 +333,9 @@
         "type": {
           "const": "panel"
         },
+        "id": {
+          "$ref": "#/$defs/elementId"
+        },
         "key": {
           "$ref": "#/$defs/key"
         },
@@ -355,6 +369,9 @@
       "properties": {
         "type": {
           "const": "repeater"
+        },
+        "id": {
+          "$ref": "#/$defs/elementId"
         },
         "key": {
           "$ref": "#/$defs/key"
@@ -400,6 +417,9 @@
       "properties": {
         "type": {
           "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/elementId"
         },
         "key": {
           "$ref": "#/$defs/key"

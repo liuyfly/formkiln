@@ -1925,6 +1925,128 @@
         ]
       },
       "expected": []
+    },
+    {
+      "name": "element ids are optional and may differ from keys",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "id": "a1",
+                "key": "name",
+                "label": "Name"
+              },
+              {
+                "type": "text",
+                "key": "noId",
+                "label": "No id"
+              },
+              {
+                "type": "panel",
+                "id": "box-1",
+                "key": "box",
+                "elements": [
+                  {
+                    "type": "content",
+                    "id": "c_1",
+                    "key": "note",
+                    "text": "Note"
+                  }
+                ]
+              },
+              {
+                "type": "repeater",
+                "id": "R",
+                "key": "pets",
+                "label": "Pets",
+                "elements": [
+                  {
+                    "type": "text",
+                    "id": "r1",
+                    "key": "petName",
+                    "label": "Pet"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": []
+    },
+    {
+      "name": "element ids are unique across the document",
+      "form": {
+        "schemaVersion": 1,
+        "key": "def",
+        "title": "Definition case",
+        "pages": [
+          {
+            "key": "page1",
+            "elements": [
+              {
+                "type": "text",
+                "id": "x",
+                "key": "a",
+                "label": "a"
+              },
+              {
+                "type": "panel",
+                "id": "p",
+                "key": "box",
+                "elements": [
+                  {
+                    "type": "text",
+                    "id": "x",
+                    "key": "b",
+                    "label": "b"
+                  }
+                ]
+              },
+              {
+                "type": "repeater",
+                "id": "r",
+                "key": "pets",
+                "label": "Pets",
+                "elements": [
+                  {
+                    "type": "text",
+                    "id": "x",
+                    "key": "c",
+                    "label": "c"
+                  },
+                  {
+                    "type": "text",
+                    "id": "p",
+                    "key": "d",
+                    "label": "d"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "pointer": "/pages/0/elements/1/elements/0/id",
+          "code": "duplicateId"
+        },
+        {
+          "pointer": "/pages/0/elements/2/elements/0/id",
+          "code": "duplicateId"
+        },
+        {
+          "pointer": "/pages/0/elements/2/elements/1/id",
+          "code": "duplicateId"
+        }
+      ]
     }
   ]
 }

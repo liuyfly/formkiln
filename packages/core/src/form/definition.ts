@@ -125,6 +125,7 @@ export function validateDefinition(doc: FormDocument): DefinitionError[] {
   checkKeys(model, report);
   checkOutcomeKeys(doc, report);
   checkWidths(model, report);
+  checkIds(model, report);
 
   const checkExpression = (expression: Expression, pointer: string, scope: Scope): void => {
     if (Array.isArray(expression)) {
@@ -196,6 +197,18 @@ function isKnownReference(path: string, model: FormModel, scope: Scope): boolean
 }
 
 type Report = (pointer: string, code: DefinitionError["code"]) => void;
+
+/** Form Schema §5.6: element ids are unique in the document. */
+function checkIds(model: FormModel, report: Report): void {
+  const seen = new Set<string>();
+  for (const node of model.nodes) {
+    if (node.kind === "page") continue;
+    const id = (node.source as { id?: string }).id;
+    if (id === undefined) continue;
+    if (seen.has(id)) report(`${node.pointer}/id`, "duplicateId");
+    seen.add(id);
+  }
+}
 
 /** Form Schema §5.5: an element spans at most the columns of the layout grid. */
 function checkWidths(model: FormModel, report: Report): void {

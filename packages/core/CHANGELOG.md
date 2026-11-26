@@ -4,7 +4,7 @@
 
 ### Minor Changes
 
-- d66058c: Layout grid: `settings.layout.columns` (1 to 12, default 3) and an optional `width` on every element, the number of columns it spans (Form Schema §5.5). Elements are placed in document order and share a row while they fit. The layout is presentational only. A new static-validity code, `width`, reports a width wider than the grid. `@formkiln/react` does not apply the layout yet (every element stays full width). Versions of `@formkiln/core` and `@formkiln/react` before this release reject documents that use `layout` or `width`: upgrade every embedding application before publishing such forms.
+- d66058c: Layout grid: `settings.layout.columns` (1 to 12, default 3) and an optional `width` on every element, the number of columns it spans (Form Schema §5.5). Elements are placed in document order and share a row while they fit. The layout is presentational only. A new static-validity code, `width`, reports a width wider than the grid. Earlier versions of `@formkiln/core` and `@formkiln/react` render such documents without the layout (every element full width): they check a document's semantic rules, not its JSON Schema, so they ignore the new properties.
 
 ### Patch Changes
 

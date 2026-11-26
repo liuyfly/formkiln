@@ -118,6 +118,7 @@ Every element has a `type` and a `key`. Common optional properties:
 
 | Property  | Type      | Description                                      |
 | --------- | --------- | ------------------------------------------------ |
+| `id`      | string    | Stable identifier of the element. See §5.6.      |
 | `visible` | Condition | Default `true`. See §7.1.                        |
 | `width`   | integer   | Columns the element spans. See §5.5.             |
 | `meta`    | object    | Free-form host data, ignored by implementations. |
@@ -240,6 +241,18 @@ Placement:
 3. Elements that are not visible (§7.1) and `hidden` fields take no space; the elements after them move up.
 
 The layout is presentational only. It MUST NOT affect validation, submission data or the order in which errors are reported. Renderers SHOULD keep the reading and focus order equal to the document order, and MAY place every element on its own row when the available width is too small for the grid (for example on a phone), which is what WCAG 2.1 success criterion 1.4.10 (reflow) asks for.
+
+### 5.6 Element ids
+
+An element MAY have an `id`: 1 to 64 letters, digits, `_` or `-`, unique among all elements of the document (at any depth). The `key` names the answer and can be changed (a rename); the `id` identifies the element itself and is kept for its whole life, through renames, moves and later versions of the form.
+
+```json
+{ "type": "text", "id": "k3x9q2", "key": "legalName", "label": "Company legal name" }
+```
+
+- Authoring tools SHOULD give every new element a random `id`, keep it when the element is edited or moved, and give a copy of an element a new one. An `id` is never reused for another element.
+- The `id` is not part of answers or submission data, and renderers ignore it.
+- Platforms MAY use it to follow an element between versions: an element with the same `id` and a different `key` in a later version is the same field renamed, not a field removed and another one added (for example to keep the answers of both versions in one export column).
 
 ## 6. Field types and the value model
 
@@ -464,6 +477,7 @@ A form document is valid only if it conforms to the [JSON Schema](../schema/form
 | `requiredParts`       | `requiredParts` ⊆ `parts`.                                                                                                                                                                                                                 | `requiredParts`                                           |
 | `validatorType`       | Validators are applied only to the value types listed in §9.                                                                                                                                                                               | the validator                                             |
 | `width`               | Every `width` is at most `settings.layout.columns` (default 3).                                                                                                                                                                            | `width`                                                   |
+| `duplicateId`         | Element ids are unique in the document (§5.6).                                                                                                                                                                                             | the `id` of every occurrence after the first              |
 
 Each error is reported as `{ "pointer": "<JSON Pointer>", "code": "<code>" }`, where the pointer ([RFC 6901](https://www.rfc-editor.org/rfc/rfc6901)) locates the offending value. For example, the `/` operator is escaped as `~1`. Errors are compared as an unordered set.
 
