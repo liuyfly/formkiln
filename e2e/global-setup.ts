@@ -15,6 +15,7 @@ export default async function globalSetup(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
   await publish(readForm("../forms/contact.json"));
+  await publish(readForm("../forms/layout.json"));
   await publish(readForm("../../packages/spec/examples/rental-application.json"));
   await publish(largeForm(300));
 }
