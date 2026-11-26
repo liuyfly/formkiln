@@ -110,6 +110,18 @@ export function isSlug(value: string): boolean {
   return SLUG.test(value);
 }
 
+/** A workspace service token as listed (never the token itself). */
+export interface ServiceToken {
+  id: string;
+  name: string;
+  role: "editor" | "viewer";
+  createdAt: string;
+  createdBy: string | null;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  revokedAt: string | null;
+}
+
 /** A member of a workspace. */
 export interface Member {
   id: string;

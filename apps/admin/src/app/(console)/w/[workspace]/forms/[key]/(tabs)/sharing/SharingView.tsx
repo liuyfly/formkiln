@@ -157,7 +157,7 @@ export function SharingView({ formKey, hostedUrl }: { formKey: string; hostedUrl
   if (!mode) return null;
 
   const issueExample = `curl -X POST "$FORMKILN_API_URL/v1/manage/workspaces/${ws.slug}/embed-tokens" \\
-  -H "Authorization: Bearer $FORMKILN_SERVICE_TOKEN" \\
+  -H "Authorization: Bearer $FORMKILN_TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{"formKey": "${formKey}", "subject": "<your user id>"}'`;
   const iframeExample = `<iframe src="${formUrl}?token=<token>" title="${formKey}"
@@ -203,8 +203,9 @@ export function SharingView({ formKey, hostedUrl }: { formKey: string; hostedUrl
         <Section title="Embedding">
           <Stack spacing={2}>
             <Typography variant="body2">
-              1. Your backend issues a token with the service token (lifetime 15 minutes by default,
-              at most 1 hour):
+              1. Your backend issues a token with an editor service token of this workspace
+              (workspace admins create them under Service tokens), valid for 15 minutes by default,
+              at most 1 hour:
             </Typography>
             <Box
               component="pre"

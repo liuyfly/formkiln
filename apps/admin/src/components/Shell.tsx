@@ -3,6 +3,7 @@
 import GroupOutlined from "@mui/icons-material/GroupOutlined";
 import DescriptionOutlined from "@mui/icons-material/DescriptionOutlined";
 import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
+import KeyOutlined from "@mui/icons-material/KeyOutlined";
 import ManageAccountsOutlined from "@mui/icons-material/ManageAccountsOutlined";
 import WorkspacesOutlined from "@mui/icons-material/WorkspacesOutlined";
 import PersonRemoveOutlined from "@mui/icons-material/PersonRemoveOutlined";
@@ -53,6 +54,7 @@ const WORKSPACE_NAV: NavItem[] = [
   { href: "/forms", label: "Forms", icon: <DescriptionOutlined />, access: "member" },
   { href: "/members", label: "Members", icon: <GroupOutlined />, access: "adminOrInstance" },
   { href: "/audit", label: "Audit log", icon: <HistoryOutlined />, access: "adminOrInstance" },
+  { href: "/service-tokens", label: "Service tokens", icon: <KeyOutlined />, access: "admin" },
   {
     href: "/data-requests",
     label: "Data requests",

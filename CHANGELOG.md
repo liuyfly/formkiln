@@ -18,6 +18,8 @@ First release. Images: `ghcr.io/liuyfly/formkiln-admin:0.1.0`,
 - Invitation-only sign-in with password and authenticator app, sessions.
 - Workspaces for teams: every page lives under `/w/<workspace>/...`, with a workspace switcher;
   members, roles, audit log and erasure requests per workspace.
+- Service tokens per workspace: workspace admins create them (editor or viewer, optional expiry),
+  copy them once, see when they were last used and revoke them.
 - Instance administration for instance admins: create, rename, archive and restore workspaces;
   disable accounts, reset authenticators and choose instance admins; the instance-wide audit log.
 - Instance admins can open a workspace's data read-only for an hour, with a reason; a banner shows

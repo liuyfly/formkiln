@@ -69,6 +69,7 @@ for (const path of [
   "/w/default/members",
   "/w/default/audit",
   "/w/default/data-requests",
+  "/w/default/service-tokens",
   "/instance/workspaces",
   "/instance/accounts",
   "/instance/audit",
