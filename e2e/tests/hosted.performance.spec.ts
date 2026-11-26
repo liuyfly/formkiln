@@ -14,7 +14,7 @@ const INPUT_BUDGET_MS = Number(process.env.E2E_INPUT_BUDGET_MS ?? 750);
  * do not count.
  */
 async function inputToVisible(page: Page, i: number): Promise<number> {
-  await page.getByRole("textbox", { name: new RegExp(`^Amount ${i}\\b`) }).fill("600");
+  await page.getByRole("textbox", { name: new RegExp(`^Amount ${i}\\b`) }).fill("100");
   return page.evaluate(
     (path) =>
       new Promise<number>((resolve) => {
@@ -49,9 +49,9 @@ test("a large form stays responsive", async ({ page }) => {
   const responded = Math.round([...samples].sort((a, b) => a - b)[1]!);
   await expect(page.getByRole("textbox", { name: /^Reason for amount 3\b/ })).toBeVisible();
 
-  // The total crosses 1000 only with a second amount.
+  // The samples total 300; the total crosses 1000 only with a larger amount.
   await expect(page.getByRole("textbox", { name: /^Approver/ })).toHaveCount(0);
-  await page.getByRole("textbox", { name: /^Amount 250\b/ }).fill("500");
+  await page.getByRole("textbox", { name: /^Amount 250\b/ }).fill("800");
   await page.keyboard.press("Tab");
   await expect(page.getByRole("textbox", { name: /^Approver/ })).toBeVisible();
 
