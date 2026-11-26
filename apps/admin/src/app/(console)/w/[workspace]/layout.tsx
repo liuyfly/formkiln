@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { adminFetch, currentUser } from "../../../../lib/session";
 import { WorkspaceProvider } from "../../../../lib/workspace";
+import { ReadOnlyBanner } from "./ReadOnlyBanner";
 
 /**
  * Pages of one workspace. Members see it with their role; instance admins who are not members
@@ -32,6 +33,23 @@ export default async function WorkspaceLayout({
     );
   }
   if (!user?.instanceAdmin) notFound();
+  const opened = user.access?.find((w) => w.slug === workspace);
+  if (opened) {
+    return (
+      <WorkspaceProvider
+        access={{
+          slug: opened.slug,
+          name: opened.name,
+          role: "viewer",
+          archived: false,
+          readOnlyUntil: opened.expiresAt,
+        }}
+      >
+        <ReadOnlyBanner until={opened.expiresAt} name={opened.name} />
+        {children}
+      </WorkspaceProvider>
+    );
+  }
   const found = await workspaceOf(workspace);
   if (!found) notFound();
   return <WorkspaceProvider access={{ ...found, role: null }}>{children}</WorkspaceProvider>;

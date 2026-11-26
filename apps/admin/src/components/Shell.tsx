@@ -109,10 +109,11 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const current = useCurrentWorkspace(user, pathname);
   const membership = user.workspaces.find((w) => w.slug === current) ?? null;
-  const role = membership?.role ?? null;
+  const reading = user.access?.find((w) => w.slug === current) ?? null;
+  const role = membership?.role ?? (reading ? "viewer" : null);
   const visible = (item: NavItem) =>
     item.access === "member"
-      ? membership !== null
+      ? membership !== null || reading !== null
       : role === "admin" || (item.access === "adminOrInstance" && user.instanceAdmin);
   const items = [
     ...(current
@@ -172,7 +173,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
           >
             {current && !membership && (
               <MenuItem value={current} disabled>
-                {current}
+                {reading ? `${reading.name} (read-only)` : current}
               </MenuItem>
             )}
             {user.workspaces.map((w) => (

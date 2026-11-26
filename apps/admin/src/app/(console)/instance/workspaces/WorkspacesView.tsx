@@ -29,6 +29,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { ConfirmDialog, type Confirmation } from "../../../../components/ConfirmDialog";
 import { Notice, VisuallyHidden, type NoticeMessage } from "../../../../components/Notice";
 import { PageHeader } from "../../../../components/PageHeader";
+import { useUser } from "../../../../components/Shell";
 import { api, errorMessage, isSlug, type WorkspaceSummary } from "../../../../lib/api";
 import { DateTime } from "../../../../lib/format";
 
@@ -142,8 +143,82 @@ function WorkspaceDialog({
   );
 }
 
+/** Asks why the instance admin needs to read a workspace, then opens it read-only for an hour. */
+function AccessDialog({
+  workspace,
+  onClose,
+}: {
+  workspace: WorkspaceSummary | null;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setReason("");
+    setError(null);
+  }, [workspace]);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!workspace) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`${BASE}/${workspace.slug}/access`, { method: "POST", body: { reason } });
+      router.push(`/w/${workspace.slug}/forms`);
+      router.refresh();
+    } catch (failure) {
+      setError(errorMessage(failure));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={workspace !== null} onClose={busy ? undefined : onClose} maxWidth="sm" fullWidth>
+      <form onSubmit={submit}>
+        <DialogTitle>View the data of {workspace?.name}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <Typography variant="body2">
+              You are not a member of this workspace. You can read its forms and submissions for one
+              hour, without changing anything. Your reason and everything you open are recorded in
+              the workspace&apos;s audit log, which its admins can read.
+            </Typography>
+            {error && <Alert severity="error">{error}</Alert>}
+            <TextField
+              label="Reason"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="For example: support ticket 4711, a submission is missing"
+              required
+              multiline
+              minRows={2}
+              autoFocus
+              slotProps={{ htmlInput: { minLength: 10, maxLength: 500 } }}
+              helperText="10 to 500 characters"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="contained" disabled={busy || reason.trim().length < 10}>
+            Open read-only
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
+  );
+}
+
 export function WorkspacesView() {
   const router = useRouter();
+  const me = useUser();
+  const [reading, setReading] = useState<WorkspaceSummary | null>(null);
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<NoticeMessage | null>(null);
@@ -274,6 +349,18 @@ export function WorkspacesView() {
             Audit log
           </MenuItem>
         )}
+        {menu &&
+          !menu.workspace.archivedAt &&
+          !me.workspaces.some((w) => w.slug === menu.workspace.slug) && (
+            <MenuItem
+              onClick={() => {
+                setReading(menu.workspace);
+                setMenu(null);
+              }}
+            >
+              View data (read-only)…
+            </MenuItem>
+          )}
         {menu && (
           <MenuItem
             onClick={() => {
@@ -326,6 +413,7 @@ export function WorkspacesView() {
           router.refresh();
         }}
       />
+      <AccessDialog workspace={reading} onClose={() => setReading(null)} />
       <ConfirmDialog
         confirmation={confirmation}
         busy={busy}

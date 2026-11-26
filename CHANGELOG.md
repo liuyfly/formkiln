@@ -20,6 +20,8 @@ First release. Images: `ghcr.io/liuyfly/formkiln-admin:0.1.0`,
   members, roles, audit log and erasure requests per workspace.
 - Instance administration for instance admins: create, rename, archive and restore workspaces;
   disable accounts, reset authenticators and choose instance admins; the instance-wide audit log.
+- Instance admins can open a workspace's data read-only for an hour, with a reason; a banner shows
+  the access, and the workspace's audit log records the reason and every page opened.
 - Form builder: palette, canvas with drag and drop and nesting, inspector, visual logic editor
   for conditions and calculations, live preview, undo and redo, checks before publishing,
   version comparison, templates, duplicating forms. JSON view for advanced edits.
