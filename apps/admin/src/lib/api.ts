@@ -119,6 +119,11 @@ export function fragmentToken(): string | null {
   return new URLSearchParams(window.location.hash.slice(1)).get("token");
 }
 
+/** Archiving and restoring forms is for admin members. */
+export function isAdmin(user: User): boolean {
+  return user.role === "admin";
+}
+
 export function canEdit(user: User): boolean {
   return user.role === "admin" || user.role === "editor";
 }
@@ -140,6 +145,17 @@ export interface FormSummary {
   unpublishedChanges: boolean;
   /** Days submissions are kept; null keeps them until deleted. */
   retentionDays: number | null;
+  /** The folder the form is in; null at the top level. */
+  folderId: string | null;
+  /** Set when the form is archived (hidden, not served, data kept). */
+  archivedAt: string | null;
+}
+
+/** A folder of forms (one level) with its count of active forms. */
+export interface Folder {
+  id: string;
+  name: string;
+  formCount: number;
 }
 
 export interface Version {
