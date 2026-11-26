@@ -15,12 +15,13 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import type { Element, FormDocument, Option, Outcome, Text, Validator } from "@formkiln/spec";
 import type { Draft } from "immer";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { catalogEntry, validatorTypesFor } from "./catalog";
 import { ConditionEditor } from "./ConditionEditor";
 import { referenceableFields } from "./logic";
 import { JsonInput, LocalizedText, NumberInput, SectionTitle, Toggle, textIn } from "./inputs";
 import { useBuilder } from "./store";
+import { freeKey, isGeneratedKey, keyFromLabel, renameElement } from "./rename";
 import { columnsOf, elementAt, setColumns, type Loc } from "./tree";
 
 const KEY = /^[a-z][a-zA-Z0-9_]{0,63}$/;
@@ -76,6 +77,54 @@ function WidthInput({
         </MenuItem>
       ))}
     </TextField>
+  );
+}
+
+/**
+ * The key of an element: committed on blur or Enter, never per keystroke, so that a key typed on
+ * the way to another one never collides with an existing element. Renaming rewrites the rules that
+ * reference the element (rename.ts).
+ */
+function ElementKeyInput({ loc, element }: { loc: Loc; element: Element }) {
+  const edit = useBuilder((state) => state.edit);
+  const document = useBuilder((state) => state.document);
+  const published = useBuilder((state) => state.publishedKeys.has(element.key));
+  const [draft, setDraft] = useState(element.key);
+  useEffect(() => setDraft(element.key), [element.key]);
+
+  const valid = KEY.test(draft);
+  const taken = valid && draft !== element.key && freeKey(document, draft, element.key) !== draft;
+  const commit = () => {
+    if (draft === element.key) return;
+    if (!valid || taken) {
+      setDraft(element.key);
+      return;
+    }
+    edit((d) => renameElement(d as FormDocument, loc, draft));
+  };
+  const helper = !valid
+    ? "A lowercase letter, then letters, digits or underscores."
+    : taken
+      ? "Another element already uses this key."
+      : published
+        ? `Published. Submissions made so far keep "${element.key}"; after a rename, new ones use the new key (a new column in exports, a new name in webhooks).`
+        : "Name of the answer in submissions, exports and webhooks. Rules that use it follow a rename.";
+  return (
+    <TextField
+      size="small"
+      label="Key"
+      value={draft}
+      onChange={(event) => setDraft(event.target.value)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") commit();
+        if (event.key === "Escape") setDraft(element.key);
+      }}
+      error={!valid || taken}
+      color={published && draft !== element.key ? "warning" : undefined}
+      helperText={helper}
+      slotProps={{ htmlInput: { spellCheck: false, style: { fontFamily: "monospace" } } }}
+    />
   );
 }
 
@@ -380,11 +429,38 @@ function ElementInspector({ loc, element }: { loc: Loc; element: Element }) {
   );
   const type = element.type;
   const isField = !["content", "panel", "repeater"].includes(type);
+  const publishedKeys = useBuilder((state) => state.publishedKeys);
+  /** The label; a generated, unpublished key follows it ("Company name" → companyName). */
+  const labelInput = () => (
+    <LocalizedText
+      label="Label"
+      value={any.label as Text | undefined}
+      onChange={(value) =>
+        edit((draft: Draft<FormDocument>) => {
+          const target = elementAt(draft as FormDocument, loc);
+          if (!target) return;
+          const before = textIn(any.label as Text | undefined, defaultLocale);
+          assign(target as unknown as Any, "label", value);
+          if (publishedKeys.has(element.key) || !isGeneratedKey(element, before)) return;
+          const derived = keyFromLabel(textIn(value, defaultLocale));
+          if (derived) {
+            renameElement(
+              draft as FormDocument,
+              loc,
+              freeKey(draft as FormDocument, derived, element.key),
+            );
+          }
+        }, `${id}.label`)
+      }
+      locales={locales}
+      defaultLocale={defaultLocale}
+      required
+    />
+  );
 
   return (
     <Stack spacing={1.5}>
       <Typography variant="subtitle2">{catalogEntry(type)?.label ?? type}</Typography>
-      <KeyInput value={element.key} onChange={(key) => update("key", key)} />
 
       {type === "content" && (
         <>
@@ -409,7 +485,7 @@ function ElementInspector({ loc, element }: { loc: Loc; element: Element }) {
       )}
       {type === "repeater" && (
         <>
-          {text("label", "Label", { required: true })}
+          {labelInput()}
           {text("itemLabel", "Item label", {
             helperText: "Shown on each item, for example “Child”.",
           })}
@@ -431,7 +507,7 @@ function ElementInspector({ loc, element }: { loc: Loc; element: Element }) {
 
       {isField && (
         <>
-          {text("label", "Label", { required: true })}
+          {labelInput()}
           {text("description", "Help text", { multiline: true })}
           {["text", "email", "phone", "url", "textarea", "number", "select"].includes(type) &&
             text("placeholder", "Placeholder")}
@@ -597,6 +673,9 @@ function ElementInspector({ loc, element }: { loc: Loc; element: Element }) {
         fields={fields}
         locale={defaultLocale}
       />
+
+      <SectionTitle>Advanced</SectionTitle>
+      <ElementKeyInput loc={loc} element={element} />
     </Stack>
   );
 }

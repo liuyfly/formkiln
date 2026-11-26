@@ -48,6 +48,8 @@ interface State {
   problems: DefinitionError[];
   /** Increments on each edit so the autosaver knows what it saved. */
   version: number;
+  /** Element keys of the latest published version (empty before the first publication). */
+  publishedKeys: ReadonlySet<string>;
 }
 
 interface Actions {
@@ -72,6 +74,7 @@ interface Actions {
   movePage: (page: number, delta: -1 | 1) => void;
   saved: (revision: number, problems: DefinitionError[], version: number) => void;
   setSaveStatus: (status: SaveStatus) => void;
+  setPublishedKeys: (keys: ReadonlySet<string>) => void;
 }
 
 export type BuilderStore = State & Actions;
@@ -117,6 +120,7 @@ export const useBuilder = create<BuilderStore>()((set, get) => {
     saveStatus: "saved",
     problems: [],
     version: 0,
+    publishedKeys: new Set(),
 
     load: (document, revision, problems) =>
       set({
@@ -297,6 +301,7 @@ export const useBuilder = create<BuilderStore>()((set, get) => {
       })),
 
     setSaveStatus: (saveStatus) => set({ saveStatus }),
+    setPublishedKeys: (publishedKeys) => set({ publishedKeys }),
   };
 });
 
