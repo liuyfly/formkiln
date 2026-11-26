@@ -288,7 +288,7 @@ export function FormsView() {
           <Table aria-label={archived ? "Archived forms" : "Forms"}>
             <TableHead>
               <TableRow>
-                <TableCell>Key</TableCell>
+                <TableCell>Form</TableCell>
                 <TableCell align="right">Version</TableCell>
                 <TableCell>{archived ? "Archived" : "Published"}</TableCell>
                 <TableCell>Access</TableCell>
@@ -351,7 +351,7 @@ export function FormsView() {
                       }
                       sx={{ fontWeight: 500 }}
                     >
-                      {form.key}
+                      {form.title || form.key}
                     </Link>
                     {form.latestVersion === null ? (
                       <Chip size="small" label="Draft" sx={{ ml: 1 }} />
@@ -366,6 +366,15 @@ export function FormsView() {
                           sx={{ ml: 1 }}
                         />
                       )
+                    )}
+                    {form.title && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontFamily: "monospace" }}
+                      >
+                        {form.key}
+                      </Typography>
                     )}
                   </TableCell>
                   <TableCell align="right">{form.latestVersion ?? "—"}</TableCell>

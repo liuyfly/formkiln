@@ -46,6 +46,7 @@ import { useBuilder, type SaveStatus } from "./store";
 import { FormMenu } from "../components/FormMenu";
 import { useFormSummary } from "../lib/useFormSummary";
 import { keysById } from "./ids";
+import { textIn } from "./inputs";
 import { elementKeys, locOfPointer } from "./tree";
 import { saveNow, useAutosave, type SavedCopy } from "./useAutosave";
 
@@ -217,7 +218,15 @@ export function Builder({ formKey }: { formKey: string }) {
               <ArrowBack />
             </IconButton>
           </Tooltip>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mr: 1 }}>
+          <Typography variant="subtitle1" component="h1" sx={{ fontWeight: 600 }}>
+            {textIn(store.document.title, store.document.settings?.defaultLocale ?? "en") ||
+              formKey}
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontFamily: "monospace", mr: 1 }}
+          >
             {formKey}
           </Typography>
           {readOnly ? (
