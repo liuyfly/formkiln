@@ -3,6 +3,8 @@
 import GroupOutlined from "@mui/icons-material/GroupOutlined";
 import DescriptionOutlined from "@mui/icons-material/DescriptionOutlined";
 import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
+import ManageAccountsOutlined from "@mui/icons-material/ManageAccountsOutlined";
+import WorkspacesOutlined from "@mui/icons-material/WorkspacesOutlined";
 import PersonRemoveOutlined from "@mui/icons-material/PersonRemoveOutlined";
 import Logout from "@mui/icons-material/Logout";
 import Menu from "@mui/icons-material/Menu";
@@ -16,6 +18,7 @@ import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
+import ListSubheader from "@mui/material/ListSubheader";
 import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
 import Toolbar from "@mui/material/Toolbar";
@@ -55,6 +58,28 @@ const WORKSPACE_NAV: NavItem[] = [
     label: "Data requests",
     icon: <PersonRemoveOutlined />,
     access: "admin",
+  },
+];
+
+/** Instance administration (instance admins only). */
+const INSTANCE_NAV: NavItem[] = [
+  {
+    href: "/instance/workspaces",
+    label: "Workspaces",
+    icon: <WorkspacesOutlined />,
+    access: "member",
+  },
+  {
+    href: "/instance/accounts",
+    label: "Accounts",
+    icon: <ManageAccountsOutlined />,
+    access: "member",
+  },
+  {
+    href: "/instance/audit",
+    label: "Instance audit log",
+    icon: <HistoryOutlined />,
+    access: "member",
   },
 ];
 
@@ -98,6 +123,25 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
       : []),
     ...ACCOUNT_NAV,
   ];
+  const instanceItems = user.instanceAdmin ? INSTANCE_NAV : [];
+
+  const renderItem = (item: NavItem) => {
+    const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+    return (
+      <ListItemButton
+        key={item.href}
+        component={NextLink}
+        href={item.href}
+        selected={active}
+        aria-current={active ? "page" : undefined}
+        onClick={() => setOpen(false)}
+        sx={{ borderRadius: 1 }}
+      >
+        <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
+        <ListItemText primary={item.label} />
+      </ListItemButton>
+    );
+  };
 
   const signOut = async () => {
     await api("/v1/admin/auth/logout", { method: "POST" }).catch(() => undefined);
@@ -141,24 +185,22 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
         </Box>
       )}
       <List component="nav" aria-label="Main" sx={{ px: 1 }}>
-        {items.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-          return (
-            <ListItemButton
-              key={item.href}
-              component={NextLink}
-              href={item.href}
-              selected={active}
-              aria-current={active ? "page" : undefined}
-              onClick={() => setOpen(false)}
-              sx={{ borderRadius: 1 }}
-            >
-              <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.label} />
-            </ListItemButton>
-          );
-        })}
+        {items.map(renderItem)}
       </List>
+      {instanceItems.length > 0 && (
+        <List
+          component="nav"
+          aria-label="Instance"
+          sx={{ px: 1 }}
+          subheader={
+            <ListSubheader component="div" sx={{ bgcolor: "transparent", lineHeight: "32px" }}>
+              Instance
+            </ListSubheader>
+          }
+        >
+          {instanceItems.map(renderItem)}
+        </List>
+      )}
     </Box>
   );
 

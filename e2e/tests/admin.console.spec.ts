@@ -69,6 +69,9 @@ for (const path of [
   "/w/default/members",
   "/w/default/audit",
   "/w/default/data-requests",
+  "/instance/workspaces",
+  "/instance/accounts",
+  "/instance/audit",
   "/settings",
 ]) {
   test(`${path} is accessible`, async ({ page }) => {

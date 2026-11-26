@@ -84,6 +84,23 @@ export interface User {
   workspaces: Membership[];
 }
 
+/** A workspace with its size, as instance admins see it. */
+export interface WorkspaceSummary {
+  slug: string;
+  name: string;
+  createdAt: string;
+  archivedAt: string | null;
+  members: number;
+  forms: number;
+}
+
+/** Workspace slugs: lower-case letters, digits and inner hyphens (part of every URL). */
+const SLUG = /^[a-z0-9][a-z0-9-]{0,46}[a-z0-9]$/;
+
+export function isSlug(value: string): boolean {
+  return SLUG.test(value);
+}
+
 /** A member of a workspace. */
 export interface Member {
   id: string;
