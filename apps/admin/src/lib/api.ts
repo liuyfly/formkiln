@@ -82,6 +82,15 @@ export interface User {
   lastLoginAt: string | null;
   createdAt: string;
   workspaces: Membership[];
+  /** Instance admins: workspaces open to them read-only right now (break-glass access). */
+  access?: AccessWindow[];
+}
+
+/** A workspace an instance admin may read without being a member, until `expiresAt`. */
+export interface AccessWindow {
+  slug: string;
+  name: string;
+  expiresAt: string;
 }
 
 /** A workspace with its size, as instance admins see it. */

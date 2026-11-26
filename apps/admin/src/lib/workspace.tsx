@@ -10,6 +10,8 @@ export interface WorkspaceAccess {
   /** Null for an instance admin who manages the workspace without being a member. */
   role: Role | null;
   archived: boolean;
+  /** Set when an instance admin reads the workspace through a read-only access window. */
+  readOnlyUntil?: string;
 }
 
 export interface Workspace extends WorkspaceAccess {
