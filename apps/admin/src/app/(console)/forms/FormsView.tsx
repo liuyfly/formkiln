@@ -121,17 +121,22 @@ export function FormsView() {
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const [foldersUnavailable, setFoldersUnavailable] = useState(false);
   const load = useCallback(() => {
     setError(null);
-    Promise.all([
-      api<FormSummary[]>(`/v1/manage/forms?archived=${archived}`),
-      api<Folder[]>("/v1/manage/folders"),
-    ]).then(
-      ([formList, folderList]) => {
-        setForms(formList);
-        setFolders(folderList);
+    api<FormSummary[]>(`/v1/manage/forms?archived=${archived}`).then(setForms, (failure) =>
+      setError(errorMessage(failure)),
+    );
+    // The forms stay usable without folders (for example against a server that has none yet).
+    api<Folder[]>("/v1/manage/folders").then(
+      (list) => {
+        setFolders(list);
+        setFoldersUnavailable(false);
       },
-      (failure) => setError(errorMessage(failure)),
+      () => {
+        setFolders([]);
+        setFoldersUnavailable(true);
+      },
     );
   }, [archived]);
   useEffect(load, [load]);
@@ -261,7 +266,12 @@ export function FormsView() {
           {notice}
         </Alert>
       )}
-      {folderId && folders && !folder && (
+      {foldersUnavailable && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Folders could not be loaded; all forms are listed at the top level.
+        </Alert>
+      )}
+      {folderId && folders && !folder && !foldersUnavailable && (
         <Alert severity="warning">This folder does not exist any more.</Alert>
       )}
       {empty && (
