@@ -3,7 +3,7 @@ import { expectAccessible } from "../lib/axe";
 
 test.describe("hosted form", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/f/e2eContact");
+    await page.goto("/f/default/e2eContact");
     await expect(page.getByRole("heading", { name: "Contact us", level: 1 })).toBeVisible();
   });
 
@@ -44,19 +44,19 @@ test.describe("hosted form", () => {
 });
 
 test("every page of the rental application is accessible", async ({ page }) => {
-  await page.goto("/f/rentalApplication");
+  await page.goto("/f/default/rentalApplication");
   await expect(page.getByRole("heading", { name: "Rental application", level: 1 })).toBeVisible();
   await expectAccessible(page);
   // Show the errors of the first page, then check the localized version.
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("alert").first()).toBeVisible();
   await expectAccessible(page);
-  await page.goto("/f/rentalApplication?lang=zh-CN");
+  await page.goto("/f/default/rentalApplication?lang=zh-CN");
   await expect(page.getByRole("heading", { name: "租房申请", level: 1 })).toBeVisible();
   await expectAccessible(page);
 });
 
 test("unknown forms are not found", async ({ page }) => {
-  const response = await page.goto("/f/noSuchForm");
+  const response = await page.goto("/f/default/noSuchForm");
   expect(response?.status()).toBe(404);
 });

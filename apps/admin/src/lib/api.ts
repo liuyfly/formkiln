@@ -65,14 +65,39 @@ export function errorMessage(error: unknown): string {
 
 export type Role = "admin" | "editor" | "viewer";
 
+/** A workspace the account belongs to, with its role there. */
+export interface Membership {
+  slug: string;
+  name: string;
+  role: Role;
+  archived: boolean;
+}
+
+/** A signed-in account. Roles belong to workspace memberships. */
 export interface User {
+  id: string;
+  email: string;
+  status: "active" | "disabled";
+  instanceAdmin: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+  workspaces: Membership[];
+}
+
+/** A member of a workspace. */
+export interface Member {
   id: string;
   email: string;
   role: Role;
   status: "active" | "disabled";
   lastLoginAt: string | null;
-  createdAt: string;
+  addedAt: string;
 }
+
+/** Adding someone by email: existing accounts are added at once, others are invited. */
+export type AddMemberResult =
+  | { result: "added"; member: Member; invitation: null }
+  | { result: "invited"; member: null; invitation: Invitation };
 
 export interface TotpEnrollment {
   secret: string;
@@ -91,6 +116,8 @@ export interface SignedIn {
 
 export interface InvitationDetails {
   email: string;
+  /** Name of the workspace the invitation is for. */
+  workspace: string | null;
   role: Role;
   expiresAt: string;
   totp: TotpEnrollment;
@@ -119,13 +146,23 @@ export function fragmentToken(): string | null {
   return new URLSearchParams(window.location.hash.slice(1)).get("token");
 }
 
-/** Archiving and restoring forms is for admin members. */
-export function isAdmin(user: User): boolean {
-  return user.role === "admin";
+/** Archiving and restoring forms, members and the audit log are for workspace admins. */
+export function isAdmin(access: { role: Role | null }): boolean {
+  return access.role === "admin";
 }
 
-export function canEdit(user: User): boolean {
-  return user.role === "admin" || user.role === "editor";
+export function canEdit(access: { role: Role | null }): boolean {
+  return access.role === "admin" || access.role === "editor";
+}
+
+/** Base path of a workspace's management API. */
+export function manageApi(workspace: string): string {
+  return `/v1/manage/workspaces/${workspace}`;
+}
+
+/** Base path of a workspace's administration API (members, audit log, erasure). */
+export function adminApi(workspace: string): string {
+  return `/v1/admin/workspaces/${workspace}`;
 }
 
 const FORM_KEY = /^[a-z][a-zA-Z0-9_]{0,63}$/;
@@ -199,6 +236,9 @@ export interface AuditEntry {
   at: string;
   actorType: "user" | "service" | "system" | "anonymous";
   actorId: string | null;
+  actorEmail: string | null;
+  /** Slug of the workspace the entry belongs to; null for sign-ins and account events. */
+  workspace: string | null;
   action: string;
   target: string | null;
   ip: string | null;

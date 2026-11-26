@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { TEMPLATES } from "../builder/templates";
 import { api, errorMessage, isFormKey } from "../lib/api";
+import { useWorkspace } from "../lib/workspace";
 
 /** A key suggestion from a title: "Rental application" → rentalApplication. */
 export function suggestKey(title: string): string {
@@ -44,6 +45,7 @@ interface Props {
 
 /** Creates a form: blank, from a template, or as a copy of another form; then opens the builder. */
 export function CreateFormDialog({ open, onClose, duplicateOf, folderId }: Props) {
+  const ws = useWorkspace();
   const router = useRouter();
   const [template, setTemplate] = useState("blank");
   const [title, setTitle] = useState("");
@@ -69,14 +71,14 @@ export function CreateFormDialog({ open, onClose, duplicateOf, folderId }: Props
       let source: string | undefined;
       if (duplicateOf) {
         document = (
-          await api<{ document: FormDocument }>(`/v1/manage/forms/${duplicateOf}/working-copy`)
+          await api<{ document: FormDocument }>(`${ws.manage}/forms/${duplicateOf}/working-copy`)
         ).document;
         source = `form:${duplicateOf}`;
       } else if (template !== "blank") {
         document = TEMPLATES.find((t) => t.id === template)?.document;
         source = `template:${template}`;
       }
-      await api("/v1/manage/forms", {
+      await api(`${ws.manage}/forms`, {
         method: "POST",
         body: {
           key,
@@ -85,9 +87,9 @@ export function CreateFormDialog({ open, onClose, duplicateOf, folderId }: Props
         },
       });
       if (folderId) {
-        await api(`/v1/manage/forms/${key}/folder`, { method: "PUT", body: { folderId } });
+        await api(`${ws.manage}/forms/${key}/folder`, { method: "PUT", body: { folderId } });
       }
-      router.push(`/forms/${key}/edit`);
+      router.push(ws.href(`/forms/${key}/edit`));
     } catch (failure) {
       setError(errorMessage(failure));
       setBusy(false);

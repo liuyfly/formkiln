@@ -10,11 +10,14 @@ export function readForm(path: string): Record<string, unknown> {
 
 /** Publishes a form version with the service token. */
 export async function publish(form: Record<string, unknown>): Promise<void> {
-  const response = await fetch(`${API_URL}/v1/manage/forms/${String(form.key)}/versions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${SERVICE_TOKEN}`, "Content-Type": "application/json" },
-    body: JSON.stringify(form),
-  });
+  const response = await fetch(
+    `${API_URL}/v1/manage/workspaces/default/forms/${String(form.key)}/versions`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${SERVICE_TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    },
+  );
   if (response.status !== 201) {
     throw new Error(
       `Publishing ${String(form.key)} failed: ${response.status} ${await response.text()}`,
@@ -24,7 +27,7 @@ export async function publish(form: Record<string, unknown>): Promise<void> {
 
 /** Submits answers through the public runtime API. */
 export async function submit(key: string, answers: Record<string, unknown>): Promise<void> {
-  const response = await fetch(`${API_URL}/v1/forms/${key}/submissions`, {
+  const response = await fetch(`${API_URL}/v1/w/default/forms/${key}/submissions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ answers }),

@@ -13,6 +13,7 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useState, type ChangeEvent } from "react";
 import { ApiError, api, errorMessage, isFormKey, type DefinitionError } from "../lib/api";
+import { useWorkspace } from "../lib/workspace";
 
 const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024;
 
@@ -26,6 +27,7 @@ interface Props {
 
 /** Publishes a form document (Form Schema v1 JSON) as a new immutable version. */
 export function PublishDialog({ open, formKey, onClose, onPublished }: Props) {
+  const ws = useWorkspace();
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [problems, setProblems] = useState<DefinitionError[]>([]);
@@ -69,7 +71,7 @@ export function PublishDialog({ open, formKey, onClose, onPublished }: Props) {
     }
     setBusy(true);
     try {
-      const result = await api<{ version: number }>(`/v1/manage/forms/${key}/versions`, {
+      const result = await api<{ version: number }>(`${ws.manage}/forms/${key}/versions`, {
         method: "POST",
         body: document,
       });

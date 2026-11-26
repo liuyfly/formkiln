@@ -1,5 +1,5 @@
 import "server-only";
-import { API_URL, isEmbedToken, isFormKey } from "./api";
+import { API_URL, isEmbedToken, isFormKey, isWorkspace } from "./api";
 
 /** Request headers passed on to formkiln-server. */
 const DRAFT_TOKEN = /^[A-Za-z0-9_-]{16,128}$/;
@@ -43,9 +43,14 @@ export function problem(status: number, title: string): Response {
   return Response.json({ status, title }, { status });
 }
 
-export async function formKeyOf(context: { params: Promise<{ formKey: string }> }) {
-  const { formKey } = await context.params;
-  return isFormKey(formKey) ? formKey : null;
+/** The formkiln-server runtime path of the form in the route, or null for an invalid one. */
+export async function formPathOf(context: {
+  params: Promise<{ workspace: string; formKey: string }>;
+}): Promise<string | null> {
+  const { workspace, formKey } = await context.params;
+  return isWorkspace(workspace) && isFormKey(formKey)
+    ? `/v1/w/${workspace}/forms/${formKey}`
+    : null;
 }
 
 /** Reads a JSON body up to `limit` bytes, or returns an error response. */
