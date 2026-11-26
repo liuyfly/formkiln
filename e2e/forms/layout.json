@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "key": "e2eLayout",
+  "title": "Delivery address",
+  "settings": { "layout": { "columns": 3 } },
+  "pages": [
+    {
+      "key": "main",
+      "elements": [
+        { "type": "text", "key": "givenName", "label": "First name", "required": true, "width": 1 },
+        { "type": "text", "key": "familyName", "label": "Last name", "required": true, "width": 2 },
+        { "type": "email", "key": "email", "label": "Email", "required": true },
+        {
+          "type": "panel",
+          "key": "address",
+          "title": "Address",
+          "elements": [
+            { "type": "text", "key": "street", "label": "Street", "width": 2 },
+            { "type": "text", "key": "houseNumber", "label": "House number", "width": 1 },
+            { "type": "text", "key": "city", "label": "City", "width": 2 },
+            { "type": "text", "key": "postcode", "label": "Postcode", "width": 2 }
+          ]
+        }
+      ]
+    }
+  ],
+  "submit": { "outcomes": [{ "key": "done", "message": "Address saved." }] }
+}
