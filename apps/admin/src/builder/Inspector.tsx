@@ -88,7 +88,14 @@ function WidthInput({
 function ElementKeyInput({ loc, element }: { loc: Loc; element: Element }) {
   const edit = useBuilder((state) => state.edit);
   const document = useBuilder((state) => state.document);
-  const published = useBuilder((state) => state.publishedKeys.has(element.key));
+  // The key this element has in the published version, followed by its id (Form Schema §5.6).
+  const publishedKey = useBuilder((state) =>
+    element.id !== undefined && state.publishedKeysById.has(element.id)
+      ? state.publishedKeysById.get(element.id)
+      : state.publishedKeys.has(element.key)
+        ? element.key
+        : undefined,
+  );
   const [draft, setDraft] = useState(element.key);
   useEffect(() => setDraft(element.key), [element.key]);
 
@@ -106,9 +113,11 @@ function ElementKeyInput({ loc, element }: { loc: Loc; element: Element }) {
     ? "A lowercase letter, then letters, digits or underscores."
     : taken
       ? "Another element already uses this key."
-      : published
-        ? `Published. Submissions made so far keep "${element.key}"; after a rename, new ones use the new key (a new column in exports, a new name in webhooks).`
-        : "Name of the answer in submissions, exports and webhooks. Rules that use it follow a rename.";
+      : publishedKey !== undefined && (draft !== element.key || element.key !== publishedKey)
+        ? `Published as "${publishedKey}". Submissions made so far keep that name; new ones use "${draft}", so webhook and API consumers see a new name.`
+        : publishedKey !== undefined
+          ? "Published. Renaming changes the name of new answers in submissions and webhooks; rules follow."
+          : "Name of the answer in submissions, exports and webhooks. Rules that use it follow a rename.";
   return (
     <TextField
       size="small"
@@ -121,7 +130,7 @@ function ElementKeyInput({ loc, element }: { loc: Loc; element: Element }) {
         if (event.key === "Escape") setDraft(element.key);
       }}
       error={!valid || taken}
-      color={published && draft !== element.key ? "warning" : undefined}
+      color={publishedKey !== undefined && draft !== publishedKey ? "warning" : undefined}
       helperText={helper}
       slotProps={{ htmlInput: { spellCheck: false, style: { fontFamily: "monospace" } } }}
     />
@@ -429,7 +438,11 @@ function ElementInspector({ loc, element }: { loc: Loc; element: Element }) {
   );
   const type = element.type;
   const isField = !["content", "panel", "repeater"].includes(type);
-  const publishedKeys = useBuilder((state) => state.publishedKeys);
+  const published = useBuilder((state) =>
+    element.id !== undefined
+      ? state.publishedKeysById.has(element.id)
+      : state.publishedKeys.has(element.key),
+  );
   /** The label; a generated, unpublished key follows it ("Company name" → companyName). */
   const labelInput = () => (
     <LocalizedText
@@ -441,7 +454,7 @@ function ElementInspector({ loc, element }: { loc: Loc; element: Element }) {
           if (!target) return;
           const before = textIn(any.label as Text | undefined, defaultLocale);
           assign(target as unknown as Any, "label", value);
-          if (publishedKeys.has(element.key) || !isGeneratedKey(element, before)) return;
+          if (published || !isGeneratedKey(element, before)) return;
           const derived = keyFromLabel(textIn(value, defaultLocale));
           if (derived) {
             renameElement(

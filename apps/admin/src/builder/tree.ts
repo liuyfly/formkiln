@@ -196,6 +196,7 @@ export function duplicate(doc: FormDocument, element: Element): Element {
     for (let n = 2; taken.has(key); n++) key = `${node.key}Copy${n}`;
     taken.add(key);
     node.key = key;
+    delete node.id; // A copy is a new element (Form Schema §5.6); the store gives it an id.
     childrenOf(node)?.forEach(rekey);
   };
   rekey(copy);
