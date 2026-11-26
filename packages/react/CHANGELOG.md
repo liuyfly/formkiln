@@ -1,5 +1,18 @@
 # @formkiln/react
 
+## 0.5.0
+
+### Minor Changes
+
+- 4c1d336: Renders the layout grid of Form Schema §5.5: forms that set a `width` on any element lay out pages, panels and repeater items on a grid of `settings.layout.columns` columns, in document order. Inactive elements and hidden fields take no space. Below 36rem of viewport width (or of a host element declared as `container: fk / inline-size`) every element takes a full row. Forms without widths render exactly as before.
+
+### Patch Changes
+
+- b759a55: Clicking a button (Submit, Continue) while a field with an invalid answer has focus no longer loses the click: the field's error now appears once the press is released, instead of shifting the button away under the pointer.
+- Updated dependencies [d66058c]
+  - @formkiln/spec@0.5.0
+  - @formkiln/core@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes
