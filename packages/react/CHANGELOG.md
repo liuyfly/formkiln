@@ -1,5 +1,13 @@
 # @formkiln/react
 
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies [7c04a94]
+  - @formkiln/spec@0.6.0
+  - @formkiln/core@0.6.0
+
 ## 0.5.0
 
 ### Minor Changes
