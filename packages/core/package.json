@@ -1,6 +1,6 @@
 {
   "name": "@formkiln/core",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Framework-agnostic Formkiln engine: expressions, validation and runtime state.",
   "license": "Apache-2.0",
   "repository": {

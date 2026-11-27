@@ -1,6 +1,6 @@
 {
   "name": "@formkiln/spec",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Formkiln form schema definition, operator catalogue and conformance test cases.",
   "license": "Apache-2.0",
   "repository": {
