@@ -8,7 +8,8 @@ Formkiln runs as three containers plus PostgreSQL:
 | `admin`  | `ghcr.io/liuyfly/formkiln-admin`  | 3200 | Back office for your team (internal network or VPN)         |
 | `hosted` | `ghcr.io/liuyfly/formkiln-hosted` | 3100 | Public fill-in pages `/f/<workspace>/<form key>`            |
 
-Tags: releases are tagged `1.2.3`, `1.2` and `latest`; `edge` follows `main`. Run the same
+Tags: releases are tagged `1.2.3`, `1.2` and `latest` (for `linux/amd64` and `linux/arm64`);
+`edge` follows `main` (`linux/amd64` for admin and hosted). Run the same
 version of all three images. The compose file defaults to `0.1` (the latest 0.1.x); see the
 [changelog](../CHANGELOG.md).
 
