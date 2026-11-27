@@ -44,6 +44,9 @@ docker compose --profile mailpit up -d
   and `SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true` on `server`).
 - **Files**: uploads are stored in the `files` volume. For several server instances use
   S3-compatible storage (`FORMKILN_STORAGE=s3`, see the server README).
+- **External database**: with your own PostgreSQL (15+), the database user must be able to
+  create the role `formkiln_app` for row-level security, or a DBA creates it once (the server says
+  how when it cannot start). The bundled `postgres` service needs nothing.
 - **Bot protection**: set `FORMKILN_TURNSTILE_SITE_KEY` and `FORMKILN_TURNSTILE_SECRET`.
 - **Backups**: the `postgres` and `files` volumes hold all data; back them up together with
   `FORMKILN_ENCRYPTION_KEY`.

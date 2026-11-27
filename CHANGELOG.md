@@ -8,7 +8,7 @@ same version of all three images.
 The npm packages (`@formkiln/spec`, `@formkiln/core`, `@formkiln/react`) are versioned on their
 own; see their CHANGELOG files under [`packages/`](packages).
 
-## 0.1.0
+## 0.1.0 (2026-11-27)
 
 First release. Images: `ghcr.io/liuyfly/formkiln-admin:0.1.0`,
 `ghcr.io/liuyfly/formkiln-hosted:0.1.0`, with `ghcr.io/liuyfly/formkiln-server:0.1.0`.
@@ -27,6 +27,10 @@ First release. Images: `ghcr.io/liuyfly/formkiln-admin:0.1.0`,
 - Form builder: palette, canvas with drag and drop and nesting, inspector, visual logic editor
   for conditions and calculations, live preview, undo and redo, checks before publishing,
   version comparison, templates, duplicating forms. JSON view for advanced edits.
+- Multi-column layouts: columns per form and a width per element, reflowing to one column on
+  narrow screens. Field keys follow their label until published and can be renamed safely
+  afterwards (rules that reference them are updated; data keeps one column per element id).
+- Forms list with titles, folders, moving forms between them, archiving and restoring forms.
 - Submissions with field labels, revealing sensitive answers (audited), CSV export, PDF per
   submission; sharing (public link, signed links, embedding), webhooks with a delivery log,
   email notifications, retention periods, deleting submissions and erasure requests.
